@@ -1,14 +1,13 @@
 #!/usr/bin/python
 
-from __future__ import division, print_function
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 
-from ..module_utils.ds8000 import (
-    PyDs8k, ds8000_argument_spec)
+from ..module_utils.ds8000 import PyDs8k, ds8000_argument_spec
 
 
 class PyDs8kHelper(PyDs8k):
@@ -33,8 +32,7 @@ class PyDs8kHelper(PyDs8k):
                 changed = True
             except Exception as generic_exc:
                 failed = True
-                self.module.fail_json(msg="Failed to add {} host to the DS8000 storage.".format(name),
-                                      detail=generic_exc)
+                self.module.fail_json(msg="Failed to add {} host to the DS8000 storage. Err: {}".format(name, to_native(generic_exc)))
         return changed, failed
 
     def _check_if_the_host_exists(self):
@@ -64,19 +62,19 @@ class PyDs8kHelper(PyDs8k):
                 changed = True
             except Exception as generic_exc:
                 failed = True
-                self.module.fail_json(msg="Failed to remove {} host from the DS8000 storage. ERR: {}".format(name, to_native(generic_exc))
+                self.module.fail_json(msg="Failed to remove {} host from the DS8000 storage. ERR: {}".format(name, to_native(generic_exc)))               
         return changed, failed
 
 def main():
-    argument_spec=ds8000_argument_spec()
+     argument_spec=ds8000_argument_spec()
     argument_spec.update(
         name=dict(type='str'),
         state=dict(
-    type='str',
-    default='present',
-    choices=[
-        'absent',
-         'present']),
+            type='str',
+            default='present',
+            choices=[
+                'absent',
+                'present']),
         host_type=dict(type='str', default='Linuxrhel')
     )
 

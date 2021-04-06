@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#! /usr/bin/python
 
-from __future__ import division, print_function
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
 from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.ds8000 import (
-    PyDs8k, ds8000_argument_spec)
+
+from ..module_utils.ds8000 import PyDs8k, ds8000_argument_spec
 
 DEFAULT_POOLS_URL = '/pools'
 DEFAULT_HOSTS_URL = '/hosts'

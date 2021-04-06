@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-#from ansible.module_utils.basic import env_fallback
-from pyds8k.client.ds8k.v1.client import Client
-import requests
 import json
+
+import requests
+from pyds8k.client.ds8k.v1.client import Client
 
 DEFAULT_BASE_URL = '/api/v1'
 DEFAULT_POOLS_URL = '/pools'

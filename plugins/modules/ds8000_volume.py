@@ -1,14 +1,13 @@
 #!/usr/bin/python
 
-from __future__ import division, print_function
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
+from ansible.module_utils.basic import AnsibleModule
 
-from ..module_utils.ds8000 import (
-    PyDs8k, ds8000_argument_spec)
+from ..module_utils.ds8000 import PyDs8k, ds8000_argument_spec
 
 
 class PyDs8kHelper(PyDs8k):
