@@ -1,16 +1,72 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# (c) 2021, Matan Carmeli <matan.carmeli7@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or
+# https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+from ..module_utils.ds8000 import (PyDs8k, costume_get_request,
+                                   ds8000_argument_spec)
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
+import json
 
 __metaclass__ = type
 
-import json
+DOCUMENTATION = r'''
+---
+author: Matan Carmeli (@matancarmeli7)
+module: ibm.ds8000.ds8000_volume_mapping
+short_description: Manage DS8000 volume mapping to hosts.
+description:
+  - Manage DS8000 volume mapping to hosts.
+options:
+  name:
+    description:
+      - The Name of the DS8000 host to work with.
+    type: str
+  state:
+    description:
+    - If the module will ensure the volume mapping will be presented on the DS8000 storage or not.
+    type: str
+    default: present
+    choices:
+      - present
+      - absent
+  volume_id:
+    description:
+      - The volume ID of the volume that you want to map to a host.
+    type: str
+  volume_name:
+    description:
+      - The volume name that you want to map to a host.
+      - Notice that different volumes have the same volume name, so it will map all of them.
+      - To use a specific volume, use C(volume_id)
+    type: str
+extends_documentation_fragment:
+  - ibm.ds8000.ds8000.documentation
+'''
 
-from ansible.module_utils._text import to_native
-from ansible.module_utils.basic import AnsibleModule
+EXAMPLES = r'''
+- name: Ensure that a host is exists on the storage
+  ibm.ds8000.ds8000_volume_mapping:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+    name: host_name_test
+    state: present
 
-from ..module_utils.ds8000 import (PyDs8k, costume_get_request,
-                                   ds8000_argument_spec)
+- name: Ensure that a host does not exists on the storage
+  ibm.ds8000.ds8000_volume_mapping:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+    name: host_name_test
+    state: absent
+'''
+
+RETURN = r''' # '''
 
 
 class PyDs8kHelper(PyDs8k):
@@ -44,9 +100,11 @@ class PyDs8kHelper(PyDs8k):
         except Exception as generic_exc:
             failed = True
             self.module.fail_json(
-                msg="Failed to map volume id {} to {} host on DS8000 storage. "
-                "ERR: {}".format(
-                    volume_id, name, to_native(generic_exc)))
+                msg="Failed to map volume id {volume_id} to {host_name} host on DS8000 storage. "
+                "ERR: {error}".format(
+                    volume_id=volume_id,
+                    host_name=name,
+                    error=to_native(generic_exc)))
         return changed, failed
 
     def _ds8000_volume_mapping_absent(self, volume_id):
@@ -64,10 +122,10 @@ class PyDs8kHelper(PyDs8k):
         token = self.token
         name = self.params['name']
         volume_mappings = []
-        sub_url = '/hosts/{}/mappings'.format(name)
+        sub_url = '/hosts/{host_name}/mappings'.format(host_name=name)
         headers = {
             "Content-Type": "application/json",
-            "X-Auth-Token": "{}".format(token)
+            "X-Auth-Token": "{token}".format(token=token)
         }
         response = costume_get_request(self.module, headers, sub_url)
         res = json.loads(response.text)
@@ -88,11 +146,11 @@ class PyDs8kHelper(PyDs8k):
         except Exception as generic_exc:
             failed = True
             self.module.fail_json(
-                msg="Failed to unmap volume id {} from {} host on DS8000 storage. "
-                "ERR: {}".format(
-                    volume_map['volume']['id'],
-                    name,
-                    to_native(generic_exc)))
+                msg="Failed to unmap volume id {volume_id} from {host_name} host on DS8000 storage. "
+                "ERR: {error}".format(
+                    volume_id=volume_map['volume']['id'],
+                    host_name=name,
+                    error=to_native(generic_exc)))
         return changed, failed
 
 

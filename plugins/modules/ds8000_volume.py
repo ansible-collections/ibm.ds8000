@@ -1,8 +1,105 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# (c) 2021, Matan Carmeli <matan.carmeli7@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or
+# https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+from ..module_utils.ds8000 import (PyDs8k, costume_get_request,
+                                   ds8000_argument_spec)
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
+import json
 
 __metaclass__ = type
+
+DOCUMENTATION = r'''
+---
+author: Matan Carmeli (@matancarmeli7)
+module: ibm.ds8000.ds8000_volume
+short_description: Manage DS8000 volumes.
+description:
+  - Manage DS8000 volumes.
+options:
+  name:
+    description:
+      - The Name of the DS8000 volume to work with.
+    type: str
+  state:
+      description:
+      - If the module will ensure the volume will be presented on the DS8000 storage or not.
+      type: str
+      default: present
+    choices:
+      - present
+      - absent
+  volume_id:
+    description:
+      - The volume ID of the DS8000 volume to work with.
+    type: str
+  volume_type:
+    description:
+      - The volume type that will be created.
+      - Valid value is fixed block C(fb) or count key data C(ckd).
+    choices:
+      - fb
+      - ckd
+    type: str
+    default: fb
+  capacity:
+    description:
+      - The size of the volume.
+    type: str
+  capacity_type:
+    description:
+      - The units of measurement of the size of the volume.
+    choices:
+      - gib
+      - bytes
+      - cyl
+      - mod1
+    type: str
+    default: gib
+  lss:
+    description:
+      - The logical subsystem (lss) that the volume will be created on.
+    type: str
+  storage_allocation_method:
+    description:
+      - Choose the storage allocation method that the DS8000 will use in creating your volume.
+      - Valid value is C(none), extent space-efficient C(ese), track space-efficient C(tse).
+    choices:
+      - none
+      - ese
+      - tse
+    type: str
+    default: none
+extends_documentation_fragment:
+  - ibm.ds8000.ds8000.documentation
+'''
+
+EXAMPLES = r'''
+- name: Ensure that a volume is exists on the storage
+  ibm.ds8000.ds8000_volume:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+    name: volume_name_test
+    state: present
+    pool: P1
+    capacity: '1'
+
+- name: Ensure that a volume does not exists on the storage
+  ibm.ds8000.ds8000_volume:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+    name: volume_name_test
+    state: absent
+'''
+
+RETURN = r''' # '''
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
@@ -49,8 +146,8 @@ class PyDs8kHelper(PyDs8k):
             failed = True
             self.module.fail_json(
                 msg="Failed to create volumes on DS8000 storage. "
-                "ERR: {}".format(
-                    to_native(generic_exc)))
+                "ERR: {error}".format(
+                    error=to_native(generic_exc)))
         return changed, failed
 
     def _ds8000_volume_absent(self, volume_name='', volume_id=''):
@@ -87,8 +184,9 @@ class PyDs8kHelper(PyDs8k):
         except Exception as generic_exc:
             failed = True
             self.module.fail_json(
-                msg="Failed to delete the volume {} from DS8000 storage. ERR: {}".format(
-                    volume_name, to_native(generic_exc)))
+                msg="Failed to delete the volume {volume_name} from DS8000 storage. "
+                    "ERR: {error}".format(
+                        volume_name=volume_name, error=to_native(generic_exc)))
         return changed, failed
 
 

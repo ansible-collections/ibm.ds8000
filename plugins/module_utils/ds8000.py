@@ -3,9 +3,25 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import json
+import traceback
 
-import requests
-from pyds8k.client.ds8k.v1.client import Client
+from ansible.module_utils.basic import missing_required_lib
+
+REQUESTS_IMP_ERR = None
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    REQUESTS_IMP_ERR = traceback.format_exc()
+    HAS_REQUESTS = False
+
+PYDS8K_IMP_ERR = None
+try:
+    from pyds8k.client.ds8k.v1.client import Client
+    HAS_PYDS8K = True
+except ImportError:
+    PYDS8K_IMP_ERR = traceback.format_exc()
+    HAS_PYDS8K = False
 
 DEFAULT_BASE_URL = '/api/v1'
 DEFAULT_POOLS_URL = '/pools'
@@ -13,6 +29,14 @@ DEFAULT_POOLS_URL = '/pools'
 
 class PyDs8k(object):
     def __init__(self, module):
+
+        if not HAS_REQUESTS:
+            module.fail_json(msg=missing_required_lib('requests'),
+                             exception=REQUESTS_IMP_ERR)
+
+        if not HAS_PYDS8K:
+            module.fail_json(msg=missing_required_lib('pyds8k'),
+                             exception=PYDS8K_IMP_ERR)
 
         self.module = module
         self.params = module.params
@@ -25,20 +49,21 @@ class PyDs8k(object):
 
     def _get_all_volumes_on_ds8000_storage(self):
         volumes = []
-        _, pools = self._get_list_of_ds8000_object(DEFAULT_POOLS_URL, 'pools')
-        for pool in pools:
-            temp_volumes_by_pool, _ = self._get_list_of_ds8000_object(
-                '/pools/{}/volumes'.format(pool), 'volumes')
-            volumes.extend(temp_volumes_by_pool)
+        pools = self._get_list_of_ds8000_object(DEFAULT_POOLS_URL, 'pools')
+        for pool in pools[1]:
+            temp_volumes_by_pool = self._get_list_of_ds8000_object(
+                '/pools/{pool}/volumes'.format(pool=pool), 'volumes')
+            volumes.extend(temp_volumes_by_pool[0])
         return volumes
 
     def _check_if_ds8000_host_exists(self):
         module = self.module
+        name = self.params['name']
         hosts = self._get_all_hosts()
-        if module.params['name'] not in hosts:
+        if name not in hosts:
             module.fail_json(
-                msg="The host {} does not exists on the ds8000 storage.".format(
-                    module.params['name']))
+                msg="The host {name} does not exists on the ds8000 storage.".format(
+                    name=name))
             return False
         return True
 
@@ -47,7 +72,7 @@ class PyDs8k(object):
         hosts = []
         headers = {
             "Content-Type": "application/json",
-            "X-Auth-Token": "{}".format(token)
+            "X-Auth-Token": "{token}".format(token=token)
         }
         hosts_url = "/hosts"
         response = costume_get_request(self.module, headers, hosts_url)
@@ -70,11 +95,11 @@ class PyDs8k(object):
         ds8000_objects_name = []
         headers = {
             "Content-Type": "application/json",
-            "X-Auth-Token": "{}".format(token)
+            "X-Auth-Token": "{token}".format(token=token)
         }
         response = costume_get_request(self.module, headers, sub_url)
         res = json.loads(response.text)
-        for obj in res['data']['{}'.format(ds8000_object)]:
+        for obj in res['data']['{obj}'.format(obj=ds8000_object)]:
             ds8000_objects_name.append(obj['name'])
             temp_ds8000_objects_dict = {
                 "name": obj['name'],
@@ -120,16 +145,20 @@ def get_rest_api_token(module):
     data = '{request:{params:{username:' + username + ',password:' + password + '}}}'
 
     response = requests.post(
-        '{}://{}:{}{}{}'.format(schema, hostname, port, DEFAULT_BASE_URL, auth_url),
+        '{schema}://{ip}:{port}{base_url}{auth}'.format(
+            schema=schema,
+            ip=hostname,
+            port=port,
+            base_url=DEFAULT_BASE_URL,
+            auth=auth_url),
         headers=headers,
         data=data,
-        verify=validate_certs
-    )
+        verify=validate_certs)
     if response.status_code == 200:
         token = get_the_rest_api_token_from_the_reponse(response.text)
         return token
     module.fail_json(msg="failed to get the rest api token:"
-                         " {}".format(response.text))
+                         " {response}".format(response=response.text))
     return None
 
 
@@ -144,10 +173,14 @@ def costume_get_request(module, headers, costume_url):
     schema = module.params['http_schema']
     validate_certs = module.params['validate_certs']
     response = requests.get(
-        '{}://{}:{}{}{}'.format(schema, hostname, port, DEFAULT_BASE_URL, costume_url),
+        '{schema}://{ip}:{port}{base_url}{costume}'.format(
+            schema=schema,
+            ip=hostname,
+            port=port,
+            base_url=DEFAULT_BASE_URL,
+            costume=costume_url),
         headers=headers,
-        verify=validate_certs
-    )
+        verify=validate_certs)
     return response
 
 

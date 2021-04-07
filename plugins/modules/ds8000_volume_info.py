@@ -1,8 +1,68 @@
-#! /usr/bin/python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# (c) 2021, Matan Carmeli <matan.carmeli7@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
+
+DOCUMENTATION = r'''
+---
+author: Matan Carmeli (@matancarmeli7)
+module: ibm.ds8000.ds8000_volume_info
+short_description: Return basic info on DS8000 volumes
+description:
+  - Return basic information pertaining to a DS8000 volumes.
+  - If the host and pool parameters are not set, it will give information on all the volumes in the storage.
+options:
+  host:
+    description:
+      - The host that the volumes are mapped to.
+    type: str
+  pool:
+    description:
+      - The pool that the volumes are belong to.
+    type: str
+extends_documentation_fragment:
+  - ibm.ds8000.ds8000.documentation
+'''
+
+EXAMPLES = r'''
+- name: get all the volumes under host
+  ibm.ds8000.ds8000_volume_info:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+    host: host_name_test
+
+- name: get all the volumes under host
+  ibm.ds8000.ds8000_volume_info:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+    pool: pool_name_test
+
+- name: get all the volumes
+  ibm.ds8000.ds8000_volume_info:
+    hostname: "{{ ds8000_host }}"
+    username: "{{ ds8000_username }}"
+    password: "{{ ds8000_password }}"
+'''
+
+RETURN = r'''
+virtual_machines:
+  description: list of dictionary of volumes and their information
+  returned: success
+  type: list
+  sample: [
+    {
+        "name": "volume_name",
+        "id": "volume_id"
+    }
+  ]
+'''
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -22,25 +82,27 @@ class PyDs8kHelper(PyDs8k):
         volumes_by_host = []
         volumes_by_pool = []
         if self.params['host']:
-            _, hosts = self._get_list_of_ds8000_object(
+            hosts = self._get_list_of_ds8000_object(
                 DEFAULT_HOSTS_URL, 'hosts')
-            if self.params['host'] in hosts:
-                volumes_by_host, _ = self._get_list_of_ds8000_object(
-                    '/hosts/{}/volumes'.format(self.params['host']), 'volumes')
+            if self.params['host'] in hosts[1]:
+                volumes_by_host = self._get_list_of_ds8000_object(
+                    '/hosts/{hosts}/volumes'.format(hosts=self.params['host']), 'volumes')
+                volumes_by_host = volumes_by_host[0]
             else:
                 self.module.fail_json(
-                    msg="The host {} is not exists".format(
-                        self.params['host']))
+                    msg="The host {hosts} is not exists".format(
+                        hosts=self.params['host']))
         if self.params['pool']:
-            _, pools = self._get_list_of_ds8000_object(
+            pools = self._get_list_of_ds8000_object(
                 DEFAULT_POOLS_URL, 'pools')
-            if self.params['pool'] in pools:
-                volumes_by_pool, _ = self._get_list_of_ds8000_object(
-                    '/pools/{}/volumes'.format(self.params['pool']), 'volumes')
+            if self.params['pool'] in pools[1]:
+                volumes_by_pool = self._get_list_of_ds8000_object(
+                    '/pools/{pool}/volumes'.format(pool=self.params['pool']), 'volumes')
+                volumes_by_pool = volumes_by_pool[0]
             else:
                 self.module.fail_json(
-                    msg="The pool {} is not exists".format(
-                        self.params['pool']))
+                    msg="The pool {pool} is not exists".format(
+                        pool=self.params['pool']))
         if len(volumes_by_host) > 0 and len(volumes_by_pool) > 0:
             wanted_volumes = [
                 temp_volume_dict for temp_volume_dict in volumes_by_host if temp_volume_dict in volumes_by_pool]
