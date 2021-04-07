@@ -24,6 +24,7 @@ options:
     description:
     - list of host_ports to assign to a specific host in DS8000 storage.
     type: list
+    elements: str
   force:
     description:
       - If set to True, in a case that a host port is assigned to another host, it will transfer it to the host that specified.
@@ -161,7 +162,7 @@ def main():
     argument_spec = ds8000_argument_spec()
     argument_spec.update(
         name=dict(type='str'),
-        host_port=dict(type='list'),
+        host_port=dict(type='list', elements='str'),
         force=dict(type='bool', default=False)
     )
 
