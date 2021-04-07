@@ -11,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 author: Matan Carmeli (@matancarmeli7)
-module: ibm.ds8000.ds8000_volume_info
+module: ds8000_volume_info
 short_description: Return basic info on DS8000 volumes
 description:
   - Return basic information pertaining to a DS8000 volumes.

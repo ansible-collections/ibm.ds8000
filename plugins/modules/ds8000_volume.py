@@ -6,18 +6,13 @@
 # https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
-from ..module_utils.ds8000 import (PyDs8k, costume_get_request,
-                                   ds8000_argument_spec)
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
-import json
 
 __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
 author: Matan Carmeli (@matancarmeli7)
-module: ibm.ds8000.ds8000_volume
+module: ds8000_volume
 short_description: Manage DS8000 volumes.
 description:
   - Manage DS8000 volumes.
@@ -27,10 +22,10 @@ options:
       - The Name of the DS8000 volume to work with.
     type: str
   state:
-      description:
-      - If the module will ensure the volume will be presented on the DS8000 storage or not.
-      type: str
-      default: present
+    description:
+    - If the module will ensure the volume will be presented on the DS8000 storage or not.
+    type: str
+    default: present
     choices:
       - present
       - absent
@@ -64,6 +59,10 @@ options:
   lss:
     description:
       - The logical subsystem (lss) that the volume will be created on.
+    type: str
+  pool:
+    description:
+      - The pool that the volume will create on.
     type: str
   storage_allocation_method:
     description:
@@ -101,8 +100,9 @@ EXAMPLES = r'''
 
 RETURN = r''' # '''
 
-from ansible.module_utils._text import to_native
+import json
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
 
 from ..module_utils.ds8000 import PyDs8k, ds8000_argument_spec
 

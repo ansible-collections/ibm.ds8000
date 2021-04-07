@@ -11,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 author: Matan Carmeli (@matancarmeli7)
-module: ibm.ds8000.ds8000_assign_host_port
+module: ds8000_assign_host_port
 short_description: Assign host ports to a DS8000 host.
 description:
   - Assign host ports to a DS8000 host.
@@ -21,9 +21,9 @@ options:
       - The Name of the DS8000 host to work with.
     type: str
   host_port:
-      description:
-      - list of host_ports to assign to a specific host in DS8000 storage.
-      type: list
+    description:
+    - list of host_ports to assign to a specific host in DS8000 storage.
+    type: list
   force:
     description:
       - If set to True, in a case that a host port is assigned to another host, it will transfer it to the host that specified.

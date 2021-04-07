@@ -11,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 author: Matan Carmeli (@matancarmeli7)
-module: ibm.ds8000.ds8000_host
+module: ds8000_host
 short_description: Manage DS8000 hosts
 description:
   - Manage DS8000 hosts.

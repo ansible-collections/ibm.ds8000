@@ -6,18 +6,13 @@
 # https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
-from ..module_utils.ds8000 import (PyDs8k, costume_get_request,
-                                   ds8000_argument_spec)
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
-import json
 
 __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
 author: Matan Carmeli (@matancarmeli7)
-module: ibm.ds8000.ds8000_volume_mapping
+module: ds8000_volume_mapping
 short_description: Manage DS8000 volume mapping to hosts.
 description:
   - Manage DS8000 volume mapping to hosts.
@@ -67,6 +62,12 @@ EXAMPLES = r'''
 '''
 
 RETURN = r''' # '''
+
+from ..module_utils.ds8000 import (PyDs8k, costume_get_request,
+                                   ds8000_argument_spec)
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
+import json
 
 
 class PyDs8kHelper(PyDs8k):
