@@ -8,7 +8,7 @@ __metaclass__ = type
 
 
 class ModuleDocFragment(object):
-    # Parameters for VMware modules
+    # Parameters for IBM DS8000 modules
     DOCUMENTATION = r'''
 options:
     hostname:
@@ -35,7 +35,7 @@ options:
       default: 8452
     http_schema:
       description:
-      - If controlled DS8000 storage is using http or https.
+      - DS8000 HTTP protocol.
       type: str
       default: https
 '''
