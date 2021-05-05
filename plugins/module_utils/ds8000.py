@@ -172,6 +172,7 @@ class Ds8000ManagerBase(object):
             verify=validate_certs)
         return response
 
+
 def ds8000_argument_spec():
     return dict(
         hostname=dict(type='str',
