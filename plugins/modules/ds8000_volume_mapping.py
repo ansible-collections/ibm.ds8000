@@ -64,12 +64,12 @@ EXAMPLES = r'''
 RETURN = r''' # '''
 
 import json
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (BaseDs8000Manager, ds8000_argument_spec)
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (Ds8000ManagerBase, ds8000_argument_spec)
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
 
-class VolumeMapper(BaseDs8000Manager):
+class VolumeMapper(Ds8000ManagerBase):
     def verify_volume_mapping_state(self, volume_id, volume_mapping_state):
         volume_mapping_on_host = self._get_volume_mapping_on_specific_host()
         volume_map = None

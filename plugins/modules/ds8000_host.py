@@ -60,11 +60,11 @@ RETURN = r''' # '''
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (BaseDs8000Manager, ds8000_argument_spec, 
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (Ds8000ManagerBase, ds8000_argument_spec,
                                                                         ABSENT, PRESENT)
 
 
-class HostManager(BaseDs8000Manager):
+class HostManager(Ds8000ManagerBase):
     def verify_host_state(self, host_state):
         host_state()
         return {'changed': self.changed, 'failed': self.failed}
@@ -94,6 +94,7 @@ class HostManager(BaseDs8000Manager):
                     msg="Failed to remove {host_name} host from the DS8000 storage."
                         " ERR: {error}".format(
                             host_name=name, error=to_native(generic_exc)))
+
 
 def main():
     argument_spec = ds8000_argument_spec()

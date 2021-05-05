@@ -102,11 +102,12 @@ RETURN = r''' # '''
 
 import json
 from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (
-    BaseDs8000Manager, ds8000_argument_spec, ABSENT, PRESENT)
+    Ds8000ManagerBase, ds8000_argument_spec, ABSENT, PRESENT)
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 
-class VolumeManager(BaseDs8000Manager):
+
+class VolumeManager(Ds8000ManagerBase):
 
     def ds8000_volume_present(self):
         self._create_ds8000_volume()

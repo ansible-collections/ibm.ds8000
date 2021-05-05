@@ -67,13 +67,13 @@ import json
 
 from ansible.module_utils.basic import AnsibleModule
 
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import BaseDs8000Manager, ds8000_argument_spec
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000ManagerBase, ds8000_argument_spec
 
 DEFAULT_POOLS_URL = '/pools'
 DEFAULT_HOSTS_URL = '/hosts'
 
 
-class VolumesInformer(BaseDs8000Manager):
+class VolumesInformer(Ds8000ManagerBase):
     def ds8000_volume_info(self):
         volumes_by_host = []
         volumes_by_pool = []

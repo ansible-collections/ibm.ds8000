@@ -5,10 +5,9 @@ __metaclass__ = type
 import json
 import traceback
 import abc
-import six
-
 
 from ansible.module_utils.basic import missing_required_lib
+from ansible.module_utils import six
 
 REQUESTS_IMP_ERR = None
 try:
@@ -31,8 +30,9 @@ DEFAULT_POOLS_URL = '/pools'
 PRESENT = 'present'
 ABSENT = 'absent'
 
+
 @six.add_metaclass(abc.ABCMeta)
-class BaseDs8000Manager(object):
+class Ds8000ManagerBase(object):
     def __init__(self, module):
 
         if not HAS_REQUESTS:
@@ -110,7 +110,6 @@ class BaseDs8000Manager(object):
             })
         return ds8000_objects
 
-
     def connect_to_api(self):
         if not self.hostname:
             self.module.fail_json(msg="Hostname parameter is missing."
@@ -155,10 +154,8 @@ class BaseDs8000Manager(object):
                                   " {response}".format(response=response.text))
         return None
 
-
     def _get_token_from_response(self, response):
         return json.loads(response)['token']['token']
-
 
     def get_ds8000_object_from_server(self, ds8000_object_url):
         port = self.module.params['port']
@@ -174,7 +171,6 @@ class BaseDs8000Manager(object):
             headers=self.headers,
             verify=validate_certs)
         return response
-
 
 def ds8000_argument_spec():
     return dict(

@@ -66,13 +66,13 @@ try:
 except ImportError:
     pass
 
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (BaseDs8000Manager, ds8000_argument_spec)
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (Ds8000ManagerBase, ds8000_argument_spec)
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 
 
-class HostPortAssigner(BaseDs8000Manager):
+class HostPortAssigner(Ds8000ManagerBase):
     def verify_assign_host_port(self, host_port):
         name = self.params['name']
         if not self.params['force'] and self._does_host_port_bound_to_other_hosts(host_port):
@@ -90,13 +90,13 @@ class HostPortAssigner(BaseDs8000Manager):
                 current_host_wwpns = self._get_all_host_ports_under_host(
                     host)
                 if host_port in current_host_wwpns:
-                    return True
                     self.failed = True
                     self.module.fail_json(
                         msg="The WWPN {host_port} assigned to another host ({host}) in the storage."
                         " For removing it from its current host and assigning it to its desired host,"
                         " use the force: true parameter.".format(
                             host_port=host_port, host=host))
+                    return True
         return False
 
     def _get_all_host_ports_under_host(self, host_name):
@@ -126,6 +126,7 @@ class HostPortAssigner(BaseDs8000Manager):
                     host_port=host_port,
                     host_name=name,
                     error=to_native(generic_exc)))
+
 
 def main():
     argument_spec = ds8000_argument_spec()
