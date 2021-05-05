@@ -102,11 +102,11 @@ RETURN = r''' # '''
 
 import json
 from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (
-    PyDs8k, ds8000_argument_spec, ABSENT, PRESENT)
+    BaseDs8000Manager, ds8000_argument_spec, ABSENT, PRESENT)
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 
-class VolumeManager(PyDs8k):
+class VolumeManager(BaseDs8000Manager):
 
     def ds8000_volume_present(self):
         self._create_ds8000_volume()
@@ -115,22 +115,16 @@ class VolumeManager(PyDs8k):
     def _create_ds8000_volume(self):
         volume_type = self.params['volume_type']
         try:
+            kwargs = dict(name=self.params['name'],
+                          cap=self.params['capacity'],
+                          pool=self.params['pool'],
+                          tp=self.params['storage_allocation_method'],
+                          captype=self.params['capacity_type'],
+                          lss=self.params['lss'])
             if volume_type == 'fb':
-                self.client.create_volume_fb(
-                    name=self.params['name'],
-                    cap=self.params['capacity'],
-                    pool=self.params['pool'],
-                    tp=self.params['storage_allocation_method'],
-                    captype=self.params['capacity_type'],
-                    lss=self.params['lss'])
+                self.client.create_volume_fb(**kwargs)
             elif volume_type == 'ckd':
-                self.client.create_volume_ckd(
-                    name=self.params['name'],
-                    cap=self.params['capacity'],
-                    pool=self.params['pool'],
-                    tp=self.params['storage_allocation_method'],
-                    captype=self.params['capacity_type'],
-                    lss=self.params['lss'])
+                self.client.create_volume_ckd(**kwargs)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True
@@ -139,7 +133,7 @@ class VolumeManager(PyDs8k):
                 "ERR: {error}".format(
                     error=to_native(generic_exc)))
 
-    def ds8000_volume_absent(self, volume_name='', volume_id=''):
+    def ds8000_volume_absent(self, volume_id='', volume_name=''):
         if volume_name:
             volume_ids = self.get_volume_ids_from_name(volume_name)
             for volume_id in volume_ids:
@@ -153,7 +147,7 @@ class VolumeManager(PyDs8k):
         return {'changed': self.changed, 'failed': self.failed}
 
     def _get_volume_name(self, volume_id):
-        volumes = self.get_all_volumes_in_ds8000_storage()
+        volumes = self.get_all_volumes()
         for volume in volumes:
             if volume['id'] == volume_id:
                 return volume['name']
@@ -196,16 +190,17 @@ def main():
         ],
     )
 
-    pyds8kh = VolumeManager(module)
+    volume_manager = VolumeManager(module)
 
     if module.params['state'] == PRESENT:
-        result = pyds8kh.ds8000_volume_present()
+        result = volume_manager.ds8000_volume_present()
     elif module.params['state'] == ABSENT:
         if module.params.get('volume_id'):
-            result = pyds8kh.ds8000_volume_absent(
+            result = volume_manager.ds8000_volume_absent(
                 volume_id=module.params['volume_id'])
         elif module.params.get('name'):
-            result = pyds8kh.ds8000_volume_absent(module.params['name'])
+            result = volume_manager.ds8000_volume_absent(
+                volume_name=module.params['name'])
 
     if result['failed']:
         module.fail_json(**result)

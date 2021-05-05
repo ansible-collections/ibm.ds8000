@@ -64,26 +64,30 @@ EXAMPLES = r'''
 RETURN = r''' # '''
 
 import json
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (PyDs8k, custom_get_request,
-                                   ds8000_argument_spec)
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (BaseDs8000Manager, ds8000_argument_spec)
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
 
-class VolumeMapper(PyDs8k):
-    def ds8000_volume_mapping_present(self, volume_id):
+class VolumeMapper(BaseDs8000Manager):
+    def verify_volume_mapping_state(self, volume_id, volume_mapping_state):
         volume_mapping_on_host = self._get_volume_mapping_on_specific_host()
+        volume_map = None
         for volume_map in volume_mapping_on_host:
             if volume_id == volume_map['volume']['id']:
+                volume_mapping_state(volume_id, volume_map)
                 return {'changed': self.changed, 'failed': self.failed}
-        self._map_volume_to_host(volume_id)
+        volume_mapping_state(volume_id, volume_map)
         return {'changed': self.changed, 'failed': self.failed}
 
-    def _map_volume_to_host(self, volume_id):
+    def map_volume_to_host(self, volume_id, volume_map_on_the_host):
+        if volume_map_on_the_host:
+            if volume_id == volume_map_on_the_host['volume']['id']:
+                return
         name = self.params['name']
         try:
             self.client.map_volume_to_host(host_name=name,
-                                      volume_id=volume_id)
+                                           volume_id=volume_id)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True
@@ -94,24 +98,21 @@ class VolumeMapper(PyDs8k):
                     host_name=name,
                     error=to_native(generic_exc)))
 
-    def ds8000_volume_mapping_absent(self, volume_id):
-        volume_mapping_on_host = self._get_volume_mapping_on_specific_host()
-        for volume_map in volume_mapping_on_host:
-            if volume_id == volume_map['volume']['id']:
-                self._unmap_volume_from_host(volume_map)
-        return {'changed': self.changed, 'failed': self.failed}
-
     def _get_volume_mapping_on_specific_host(self):
         name = self.params['name']
         volume_mappings = []
         sub_url = '/hosts/{host_name}/mappings'.format(host_name=name)
-        response = custom_get_request(self.module, self.headers, sub_url)
+        response = self.get_ds8000_object_from_server(sub_url)
         parsed_response = json.loads(response.text)['data']['mappings']
         for volume_map in parsed_response:
             volume_mappings.append(volume_map)
         return volume_mappings
 
-    def _unmap_volume_from_host(self, volume_map):
+    def unmap_volume_from_host(self, volume_id_on_the_host, volume_map):
+        if not volume_map:
+            return
+        if volume_id_on_the_host != volume_map['volume']['id']:
+            return
         name = self.params['name']
         lun_id = volume_map['lunid']
         try:
@@ -128,11 +129,13 @@ class VolumeMapper(PyDs8k):
                     error=to_native(generic_exc)))
 
 
-def ensure_volume_mapping_state(volume_id, module, pyds8kh):
+def ensure_volume_mapping_state(volume_id, module, volume_mapper):
     if module.params['state'] == 'present':
-        result = pyds8kh.ds8000_volume_mapping_present(volume_id)
+        result = volume_mapper.verify_volume_mapping_state(volume_id,
+                                                           volume_mapper.map_volume_to_host)
     elif module.params['state'] == 'absent':
-        result = pyds8kh.ds8000_volume_mapping_absent(volume_id)
+        result = volume_mapper.verify_volume_mapping_state(volume_id,
+                                                           volume_mapper.unmap_volume_from_host)
     return result
 
 
@@ -152,20 +155,20 @@ def main():
         ],
     )
 
-    pyds8kh = VolumeMapper(module)
+    volume_mapper = VolumeMapper(module)
 
-    if pyds8kh.does_ds8000_object_exist('name', 'hosts'):
+    if volume_mapper.verify_ds8000_object_exist('name', 'hosts'):
         if module.params.get('volume_name'):
-            volume_ids = pyds8kh.get_volume_ids_from_name(
+            volume_ids = volume_mapper.get_volume_ids_from_name(
                 module.params['volume_name'])
             for volume_id in volume_ids:
-                result = ensure_volume_mapping_state(volume_id, module, pyds8kh)
+                result = ensure_volume_mapping_state(volume_id, module, volume_mapper)
         else:
             result = ensure_volume_mapping_state(
-                module.params['volume_id'], module, pyds8kh)
+                module.params['volume_id'], module, volume_mapper)
     else:
-        pyds8kh.failed = True
-        result = {'changed': pyds8kh.changed, 'failed': pyds8kh.failed}
+        volume_mapper.failed = True
+        result = {'changed': volume_mapper.changed, 'failed': volume_mapper.failed}
 
     if result['failed']:
         module.fail_json(**result)

@@ -67,33 +67,32 @@ import json
 
 from ansible.module_utils.basic import AnsibleModule
 
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import PyDs8k, ds8000_argument_spec
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import BaseDs8000Manager, ds8000_argument_spec
 
 DEFAULT_POOLS_URL = '/pools'
 DEFAULT_HOSTS_URL = '/hosts'
 
 
-class VolumesInformer(PyDs8k):
+class VolumesInformer(BaseDs8000Manager):
     def ds8000_volume_info(self):
         volumes_by_host = []
         volumes_by_pool = []
-        if self.params['host'] and self.does_ds8000_object_exist('host', 'hosts'):
+        if self.params['host'] and self.verify_ds8000_object_exist('host', 'hosts'):
             volumes_by_host = self.get_ds8000_objects_by_type(
                 '/hosts/{hosts}/volumes'.format(hosts=self.params['host']), 'volumes')
-        if self.params['pool'] and self.does_ds8000_object_exist('pool', 'pools'):
+        if self.params['pool'] and self.verify_ds8000_object_exist('pool', 'pools'):
             volumes_by_pool = self.get_ds8000_objects_by_type(
                 '/pools/{pool}/volumes'.format(pool=self.params['pool']), 'volumes')
         if volumes_by_host and volumes_by_pool:
             volumes_by_pool_and_host = [
-                temp_volume_dict for temp_volume_dict in volumes_by_host if temp_volume_dict in volumes_by_pool]
+                volume_dict for volume_dict in volumes_by_host if volume_dict in volumes_by_pool]
             return volumes_by_pool_and_host
         elif volumes_by_host and not volumes_by_pool:
             return volumes_by_host
         elif not volumes_by_host and volumes_by_pool:
             return volumes_by_pool
         else:
-            volumes = self.get_all_volumes_in_ds8000_storage()
-            return volumes
+            return self.get_all_volumes()
 
 
 def main():
@@ -107,11 +106,11 @@ def main():
         argument_spec=argument_spec,
     )
 
-    pyds8kh = VolumesInformer(module)
+    volume_informer = VolumesInformer(module)
 
-    volumes = pyds8kh.ds8000_volume_info()
+    volumes = volume_informer.ds8000_volume_info()
 
-    module.exit_json(changed=pyds8kh.changed, volumes=volumes)
+    module.exit_json(changed=volume_informer.changed, volumes=volumes)
 
 
 if __name__ == '__main__':

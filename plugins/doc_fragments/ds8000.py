@@ -25,7 +25,7 @@ options:
       type: str
     validate_certs:
       description:
-      - Allows connection when SSL certificates are not valid. Set to C(false) when certificates are not trusted.
+      - Allows connection when SSL certificates are invalid. Set to C(false) when certificates are not trusted.
       type: bool
       default: True
     port:

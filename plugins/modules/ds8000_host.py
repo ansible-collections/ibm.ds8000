@@ -60,19 +60,19 @@ RETURN = r''' # '''
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (PyDs8k, ds8000_argument_spec, 
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (BaseDs8000Manager, ds8000_argument_spec, 
                                                                         ABSENT, PRESENT)
 
 
-class HostManger(PyDs8k):
-    def ds8000_host_present(self):
-        self._add_host_to_ds8000()
+class HostManager(BaseDs8000Manager):
+    def verify_host_state(self, host_state):
+        host_state()
         return {'changed': self.changed, 'failed': self.failed}
 
-    def _add_host_to_ds8000(self):
+    def add_host_to_ds8000(self):
         name = self.params['name']
         host_type = self.params['host_type']
-        if not self.does_ds8000_object_exist('name', 'hosts', False):
+        if not self.does_ds8000_object_exist('name', 'hosts'):
             try:
                 self.client.create_host(host_name=name, hosttype=host_type)
                 self.changed = True
@@ -82,13 +82,9 @@ class HostManger(PyDs8k):
                     msg="Failed to add {host_name} host to the DS8000 storage. ERR: {error}".format(
                         host_name=name, error=to_native(generic_exc)))
 
-    def ds8000_host_absent(self):
-        self._remove_host_from_ds8000()
-        return {'changed': self.changed, 'failed': self.failed}
-
-    def _remove_host_from_ds8000(self):
+    def remove_host_from_ds8000(self):
         name = self.params['name']
-        if self.does_ds8000_object_exist('name', 'hosts', False):
+        if self.does_ds8000_object_exist('name', 'hosts'):
             try:
                 self.client.delete_host(host_name=name)
                 self.changed = True
@@ -116,12 +112,12 @@ def main():
         argument_spec=argument_spec,
     )
 
-    pyds8kh = HostManger(module)
+    host_manager = HostManager(module)
 
     if module.params['state'] == PRESENT:
-        result = pyds8kh.ds8000_host_present()
+        result = host_manager.verify_host_state(host_manager.add_host_to_ds8000)
     elif module.params['state'] == ABSENT:
-        result = pyds8kh.ds8000_host_absent()
+        result = host_manager.verify_host_state(host_manager.remove_host_from_ds8000)
 
     if result['failed']:
         module.fail_json(**result)
