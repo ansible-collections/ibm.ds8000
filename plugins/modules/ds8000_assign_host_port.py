@@ -36,7 +36,7 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-- name: Assign some host ports to host with force on false
+- name: Assign some host ports to host unless they are already assigned to another host
   ibm.ds8000.ds8000_assign_host_port:
     hostname: "{{ ds8000_host }}"
     username: "{{ ds8000_username }}"
@@ -47,7 +47,7 @@ EXAMPLES = r'''
       - 10000000C9A1BAB2
       - 10000000C9A1BAB3
 
-- name: Assign some host ports to host with force on true
+- name: Assign some host ports to host even though they are already assigned to another host
   ibm.ds8000.ds8000_assign_host_port:
     hostname: "{{ ds8000_host }}"
     username: "{{ ds8000_username }}"

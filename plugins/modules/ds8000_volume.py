@@ -62,7 +62,7 @@ options:
     type: str
   pool:
     description:
-      - The pool that the volume will create on.
+      - The pool that the volume will be created on.
     type: str
   storage_allocation_method:
     description:
