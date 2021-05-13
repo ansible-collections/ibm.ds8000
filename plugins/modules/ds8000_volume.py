@@ -109,11 +109,11 @@ from ansible.module_utils.basic import AnsibleModule
 
 class VolumeManager(Ds8000ManagerBase):
 
-    def ds8000_volume_present(self):
-        self._create_ds8000_volume()
+    def volume_present(self):
+        self._create_volume()
         return {'changed': self.changed, 'failed': self.failed}
 
-    def _create_ds8000_volume(self):
+    def _create_volume(self):
         volume_type = self.params['volume_type']
         try:
             kwargs = dict(name=self.params['name'],
@@ -134,7 +134,7 @@ class VolumeManager(Ds8000ManagerBase):
                 "ERR: {error}".format(
                     error=to_native(generic_exc)))
 
-    def ds8000_volume_absent(self, volume_id='', volume_name=''):
+    def volume_absent(self, volume_id='', volume_name=''):
         if volume_name:
             volume_ids = self.get_volume_ids_from_name(volume_name)
             for volume_id in volume_ids:
@@ -194,13 +194,13 @@ def main():
     volume_manager = VolumeManager(module)
 
     if module.params['state'] == PRESENT:
-        result = volume_manager.ds8000_volume_present()
+        result = volume_manager.volume_present()
     elif module.params['state'] == ABSENT:
         if module.params.get('volume_id'):
-            result = volume_manager.ds8000_volume_absent(
+            result = volume_manager.volume_absent(
                 volume_id=module.params['volume_id'])
         elif module.params.get('name'):
-            result = volume_manager.ds8000_volume_absent(
+            result = volume_manager.volume_absent(
                 volume_name=module.params['name'])
 
     if result['failed']:

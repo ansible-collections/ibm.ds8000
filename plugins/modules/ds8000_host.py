@@ -69,7 +69,7 @@ class HostManager(Ds8000ManagerBase):
         host_state()
         return {'changed': self.changed, 'failed': self.failed}
 
-    def add_host_to_ds8000(self):
+    def add_host(self):
         name = self.params['name']
         host_type = self.params['host_type']
         if not self.does_ds8000_object_exist('name', 'hosts'):
@@ -82,7 +82,7 @@ class HostManager(Ds8000ManagerBase):
                     msg="Failed to add {host_name} host to the DS8000 storage. ERR: {error}".format(
                         host_name=name, error=to_native(generic_exc)))
 
-    def remove_host_from_ds8000(self):
+    def remove_host(self):
         name = self.params['name']
         if self.does_ds8000_object_exist('name', 'hosts'):
             try:
@@ -116,9 +116,9 @@ def main():
     host_manager = HostManager(module)
 
     if module.params['state'] == PRESENT:
-        result = host_manager.verify_host_state(host_manager.add_host_to_ds8000)
+        result = host_manager.verify_host_state(host_manager.add_host)
     elif module.params['state'] == ABSENT:
-        result = host_manager.verify_host_state(host_manager.remove_host_from_ds8000)
+        result = host_manager.verify_host_state(host_manager.remove_host)
 
     if result['failed']:
         module.fail_json(**result)

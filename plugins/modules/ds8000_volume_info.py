@@ -74,7 +74,7 @@ DEFAULT_HOSTS_URL = '/hosts'
 
 
 class VolumesInformer(Ds8000ManagerBase):
-    def ds8000_volume_info(self):
+    def volume_info(self):
         volumes_by_host = []
         volumes_by_pool = []
         if self.params['host'] and self.verify_ds8000_object_exist('host', 'hosts'):
@@ -108,7 +108,7 @@ def main():
 
     volume_informer = VolumesInformer(module)
 
-    volumes = volume_informer.ds8000_volume_info()
+    volumes = volume_informer.volume_info()
 
     module.exit_json(changed=volume_informer.changed, volumes=volumes)
 
