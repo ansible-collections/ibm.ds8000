@@ -70,17 +70,26 @@ from ansible.module_utils._text import to_native
 
 
 class VolumeMapper(Ds8000ManagerBase):
-    def verify_volume_mapping_state(self, volume_id, volume_mapping_state):
-        volume_mapping_on_host = self._get_volume_mapping_on_specific_host()
+    def ensure_map(self, volume_id):
+        result = self._verify_volume_mapping_state(volume_id, self._map_volume_to_host)
+        return result
+
+    def ensure_unmap(self, volume_id):
+        result = self._verify_volume_mapping_state(volume_id, self._unmap_volume_from_host)
+        return result
+
+    def _verify_volume_mapping_state(self, volume_id, volume_mapping_state):
+        volume_mapping_on_host = self._get_volumes_mapping_on_specific_host()
         volume_map = None
         for volume_map in volume_mapping_on_host:
             if volume_id == volume_map['volume']['id']:
                 volume_mapping_state(volume_id, volume_map)
                 return {'changed': self.changed, 'failed': self.failed}
         volume_mapping_state(volume_id, volume_map)
+
         return {'changed': self.changed, 'failed': self.failed}
 
-    def map_volume_to_host(self, volume_id, volume_map_on_the_host):
+    def _map_volume_to_host(self, volume_id, volume_map_on_the_host):
         if volume_map_on_the_host:
             if volume_id == volume_map_on_the_host['volume']['id']:
                 return
@@ -98,7 +107,7 @@ class VolumeMapper(Ds8000ManagerBase):
                     host_name=name,
                     error=to_native(generic_exc)))
 
-    def _get_volume_mapping_on_specific_host(self):
+    def _get_volumes_mapping_on_specific_host(self):
         name = self.params['name']
         volume_mappings = []
         sub_url = '/hosts/{host_name}/mappings'.format(host_name=name)
@@ -108,7 +117,7 @@ class VolumeMapper(Ds8000ManagerBase):
             volume_mappings.append(volume_map)
         return volume_mappings
 
-    def unmap_volume_from_host(self, volume_id_on_the_host, volume_map):
+    def _unmap_volume_from_host(self, volume_id_on_the_host, volume_map):
         if not volume_map:
             return
         if volume_id_on_the_host != volume_map['volume']['id']:
@@ -131,11 +140,9 @@ class VolumeMapper(Ds8000ManagerBase):
 
 def ensure_volume_mapping_state(volume_id, module, volume_mapper):
     if module.params['state'] == 'present':
-        result = volume_mapper.verify_volume_mapping_state(volume_id,
-                                                           volume_mapper.map_volume_to_host)
+        result = volume_mapper.ensure_map(volume_id)
     elif module.params['state'] == 'absent':
-        result = volume_mapper.verify_volume_mapping_state(volume_id,
-                                                           volume_mapper.unmap_volume_from_host)
+        result = volume_mapper.ensure_unmap(volume_id)
     return result
 
 

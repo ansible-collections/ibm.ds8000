@@ -80,9 +80,7 @@ class Ds8000ManagerBase(object):
                                  ds8000_object_type):
         ds8000_object_name = self.params[ds8000_object_param_name]
         ds8000_objects = self.get_ds8000_objects_name_by_type(ds8000_object_type)
-        if ds8000_object_name not in ds8000_objects:
-            return False
-        return True
+        return ds8000_object_name in ds8000_objects
 
     def get_ds8000_objects_name_by_type(self, ds8000_object_type):
         ds8000_object_type_url = "/{object_type}".format(object_type=ds8000_object_type)
