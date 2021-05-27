@@ -70,11 +70,11 @@ from ansible.module_utils._text import to_native
 
 
 class VolumeMapper(Ds8000ManagerBase):
-    def ensure_map(self, volume_id):
+    def ensure_volume_mapped_to_host(self, volume_id):
         result = self._verify_volume_mapping_state(volume_id, self._map_volume_to_host)
         return result
 
-    def ensure_unmap(self, volume_id):
+    def ensure_volume_unmapped_from_host(self, volume_id):
         result = self._verify_volume_mapping_state(volume_id, self._unmap_volume_from_host)
         return result
 
@@ -140,9 +140,9 @@ class VolumeMapper(Ds8000ManagerBase):
 
 def ensure_volume_mapping_state(volume_id, module, volume_mapper):
     if module.params['state'] == 'present':
-        result = volume_mapper.ensure_map(volume_id)
+        result = volume_mapper.ensure_volume_mapped_to_host(volume_id)
     elif module.params['state'] == 'absent':
-        result = volume_mapper.ensure_unmap(volume_id)
+        result = volume_mapper.ensure_volume_unmapped_from_host(volume_id)
     return result
 
 

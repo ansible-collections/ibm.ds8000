@@ -65,11 +65,19 @@ from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (Ds8000Ma
 
 
 class HostManager(Ds8000ManagerBase):
-    def verify_host_state(self, host_state):
+    def ensure_host_present(self):
+        result = self._verify_host_state(self._add_host)
+        return result
+
+    def ensure_host_absent(self):
+        result = self._verify_host_state(self._remove_host)
+        return result
+
+    def _verify_host_state(self, host_state):
         host_state()
         return {'changed': self.changed, 'failed': self.failed}
 
-    def add_host(self):
+    def _add_host(self):
         name = self.params['name']
         host_type = self.params['host_type']
         if not self.does_ds8000_object_exist('name', 'hosts'):
@@ -82,7 +90,7 @@ class HostManager(Ds8000ManagerBase):
                     msg="Failed to add {host_name} host to the DS8000 storage. ERR: {error}".format(
                         host_name=name, error=to_native(generic_exc)))
 
-    def remove_host(self):
+    def _remove_host(self):
         name = self.params['name']
         if self.does_ds8000_object_exist('name', 'hosts'):
             try:
@@ -116,9 +124,9 @@ def main():
     host_manager = HostManager(module)
 
     if module.params['state'] == PRESENT:
-        result = host_manager.verify_host_state(host_manager.add_host)
+        result = host_manager.ensure_host_present()
     elif module.params['state'] == ABSENT:
-        result = host_manager.verify_host_state(host_manager.remove_host)
+        result = host_manager.ensure_host_absent()
 
     if result['failed']:
         module.fail_json(**result)

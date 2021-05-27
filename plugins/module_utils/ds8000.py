@@ -7,6 +7,7 @@ import traceback
 import abc
 
 from ansible.module_utils.basic import missing_required_lib
+from ansible.module_utils._text import to_native
 from ansible.module_utils import six
 
 REQUESTS_IMP_ERR = None
@@ -159,16 +160,22 @@ class Ds8000ManagerBase(object):
         port = self.module.params['port']
         schema = self.module.params['http_schema']
         validate_certs = self.module.params['validate_certs']
-        response = requests.get(
-            '{schema}://{hostname}:{port}{base_url}{custom}'.format(
-                schema=schema,
-                hostname=self.hostname,
-                port=port,
-                base_url=DEFAULT_BASE_URL,
-                custom=ds8000_object_url),
-            headers=self.headers,
-            verify=validate_certs)
-        return response
+        try:
+            response = requests.get(
+                '{schema}://{hostname}:{port}{base_url}{custom}'.format(
+                    schema=schema,
+                    hostname=self.hostname,
+                    port=port,
+                    base_url=DEFAULT_BASE_URL,
+                    custom=ds8000_object_url),
+                headers=self.headers,
+                verify=validate_certs)
+            return response
+        except Exception as generic_exc:
+            self.module.fail_json(
+                msg="Failed to get ds8000 object list from the server"
+                    " ERR: {error}".format(
+                        error=to_native(generic_exc)))
 
 
 def ds8000_argument_spec():
