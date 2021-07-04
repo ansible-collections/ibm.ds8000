@@ -91,8 +91,9 @@ class VolumesInformer(Ds8000ManagerBase):
             return volumes_by_host
         elif not volumes_by_host and volumes_by_pool:
             return volumes_by_pool
-        else:
+        elif not self.params['host'] and not self.params['pool']:
             return self.get_all_volumes()
+        return volumes_by_host
 
 
 def main():
