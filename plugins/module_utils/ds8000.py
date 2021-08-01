@@ -2,13 +2,13 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import abc
 import json
 import traceback
-import abc
 
+from ansible.module_utils import six
 from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils.common.text.converters import to_native
-from ansible.module_utils import six
 
 REQUESTS_IMP_ERR = None
 try:
@@ -27,7 +27,6 @@ except ImportError:
     HAS_PYDS8K = False
 
 DEFAULT_BASE_URL = '/api/v1'
-DEFAULT_POOLS_URL = '/pools'
 PRESENT = 'present'
 ABSENT = 'absent'
 
@@ -59,12 +58,23 @@ class Ds8000ManagerBase(object):
 
     def get_all_volumes(self):
         volumes = []
-        pools = self.get_ds8000_objects_by_type(DEFAULT_POOLS_URL, 'pools')
+        pools = self.client.get_pools()
         for pool in pools:
-            volumes_by_pool = self.get_ds8000_objects_by_type(
-                '/pools/{pool}/volumes'.format(pool=pool['name']), 'volumes')
-            volumes.extend(volumes_by_pool)
+            if pool.stgtype != 'ckg':
+                volumes_by_pool = self.matan_get_ds8000_objects_by_type(
+                    self.client.get_volumes_by_pool(pool_id=pool.id))
+                volumes.extend(volumes_by_pool)
         return volumes
+
+    def matan_get_ds8000_objects_by_type(self, get_objects_command):
+        ds8000_objects = []
+        ds8000_objects_by_type = get_objects_command
+        for obj in ds8000_objects_by_type:
+            ds8000_objects.append({
+                "name": obj.name,
+                "id": obj.id
+            })
+        return ds8000_objects
 
     def verify_ds8000_object_exist(self, ds8000_object_param_name,
                                    ds8000_object_type):
