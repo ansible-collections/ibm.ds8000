@@ -82,7 +82,7 @@ class VolumeMapper(Ds8000ManagerBase):
         volume_mapping_on_host = self._get_volumes_mapping_on_specific_host()
         volume_map = None
         for volume_map in volume_mapping_on_host:
-            if volume_id == volume_map['volume']['id']:
+            if volume_id == volume_map.volume:
                 volume_mapping_state(volume_id, volume_map)
                 return {'changed': self.changed, 'failed': self.failed}
         volume_mapping_state(volume_id, volume_map)
@@ -91,7 +91,7 @@ class VolumeMapper(Ds8000ManagerBase):
 
     def _map_volume_to_host(self, volume_id, volume_map_on_the_host):
         if volume_map_on_the_host:
-            if volume_id == volume_map_on_the_host['volume']['id']:
+            if volume_id == volume_map_on_the_host.volume:
                 return
         name = self.params['name']
         try:
@@ -110,20 +110,18 @@ class VolumeMapper(Ds8000ManagerBase):
     def _get_volumes_mapping_on_specific_host(self):
         name = self.params['name']
         volume_mappings = []
-        sub_url = '/hosts/{host_name}/mappings'.format(host_name=name)
-        response = self.get_ds8000_object_from_server(sub_url)
-        parsed_response = json.loads(response.text)['data']['mappings']
-        for volume_map in parsed_response:
+        volume_mappings_by_host = self.client.get_mappings_by_host(host_name=name)
+        for volume_map in volume_mappings_by_host:
             volume_mappings.append(volume_map)
         return volume_mappings
 
     def _unmap_volume_from_host(self, volume_id_on_the_host, volume_map):
         if not volume_map:
             return
-        if volume_id_on_the_host != volume_map['volume']['id']:
+        if volume_id_on_the_host != volume_map.volume:
             return
         name = self.params['name']
-        lun_id = volume_map['lunid']
+        lun_id = volume_map.lunid
         try:
             self.client.unmap_volume_from_host(host_name=name,
                                                lunid=lun_id)
@@ -133,7 +131,7 @@ class VolumeMapper(Ds8000ManagerBase):
             self.module.fail_json(
                 msg="Failed to unmap volume id {volume_id} from {host_name} host on DS8000 storage."
                 " ERR: {error}".format(
-                    volume_id=volume_map['volume']['id'],
+                    volume_id=volume_map.volume,
                     host_name=name,
                     error=to_native(generic_exc)))
 
@@ -164,7 +162,7 @@ def main():
 
     volume_mapper = VolumeMapper(module)
 
-    if volume_mapper.verify_ds8000_object_exist('name', 'hosts'):
+    if volume_mapper.verify_ds8000_object_exist('name', volume_mapper.client.get_hosts()):
         if module.params.get('volume_name'):
             volume_ids = volume_mapper.get_volume_ids_from_name(
                 module.params['volume_name'])

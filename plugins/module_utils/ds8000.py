@@ -29,6 +29,7 @@ except ImportError:
 DEFAULT_BASE_URL = '/api/v1'
 PRESENT = 'present'
 ABSENT = 'absent'
+BAD_POOL_TYPES = ['ckd']
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -49,10 +50,6 @@ class Ds8000ManagerBase(object):
         self.username = module.params['username']
         self.password = module.params['password']
         self.client = self.connect_to_api()
-        self.token = self.get_rest_api_token()
-        self.headers = {'Content-Type': 'application/json'}
-        self.token_header = {'X-Auth-Token': '{token}'.format(token=self.token)}
-        self.headers.update(self.token_header)
         self.changed = False
         self.failed = False
 
@@ -60,45 +57,37 @@ class Ds8000ManagerBase(object):
         volumes = []
         pools = self.client.get_pools()
         for pool in pools:
-            if pool.stgtype != 'ckg':
-                volumes_by_pool = self.matan_get_ds8000_objects_by_type(
+            if pool.stgtype not in BAD_POOL_TYPES:
+                volumes_by_pool = self.get_ds8000_objects_by_type(
                     self.client.get_volumes_by_pool(pool_id=pool.id))
                 volumes.extend(volumes_by_pool)
         return volumes
 
-    def matan_get_ds8000_objects_by_type(self, get_objects_command):
-        ds8000_objects = []
-        ds8000_objects_by_type = get_objects_command
-        for obj in ds8000_objects_by_type:
-            ds8000_objects.append({
-                "name": obj.name,
-                "id": obj.id
-            })
-        return ds8000_objects
-
     def verify_ds8000_object_exist(self, ds8000_object_param_name,
-                                   ds8000_object_type):
+                                   get_objects_command):
         ds8000_object_name = self.params[ds8000_object_param_name]
-        if self.does_ds8000_object_exist(ds8000_object_param_name, ds8000_object_type):
+        if self.does_ds8000_object_exist(ds8000_object_param_name, get_objects_command):
             return True
         self.module.fail_json(
             msg="The {object_type} {object_name} "
                 "does not exist in the ds8000 storage.".format(
-                    object_type=ds8000_object_type[:-1], object_name=ds8000_object_name))
+                    object_type=ds8000_object_param_name, object_name=ds8000_object_name))
         return False
 
     def does_ds8000_object_exist(self, ds8000_object_param_name,
-                                 ds8000_object_type):
+                                 get_objects_command):
         ds8000_object_name = self.params[ds8000_object_param_name]
-        ds8000_objects = self.get_ds8000_objects_name_by_type(ds8000_object_type)
-        return ds8000_object_name in ds8000_objects
+        ds8000_objects_name = self.get_ds8000_objects_name_by_type(get_objects_command)
+        ds8000_objects_id = self.get_ds8000_objects_id_by_type(get_objects_command)
+        return ds8000_object_name in ds8000_objects_name + ds8000_objects_id
 
-    def get_ds8000_objects_name_by_type(self, ds8000_object_type):
-        ds8000_object_type_url = "/{object_type}".format(object_type=ds8000_object_type)
-        response = self.get_ds8000_object_from_server(ds8000_object_type_url)
-        parsed_response = json.loads(response.text)['data']['{object_type}'.format(
-            object_type=ds8000_object_type)]
-        return [object_type['name'] for object_type in parsed_response]
+    def get_ds8000_objects_name_by_type(self, get_objects_command):
+        ds8000_objects_name_by_type = get_objects_command
+        return [object_type.name for object_type in ds8000_objects_name_by_type]
+
+    def get_ds8000_objects_id_by_type(self, get_objects_command):
+        ds8000_objects_id_by_type = get_objects_command
+        return [object_type.id for object_type in ds8000_objects_id_by_type]
 
     def get_volume_ids_from_name(self, volume_name):
         volume_ids = []
@@ -108,14 +97,13 @@ class Ds8000ManagerBase(object):
                 volume_ids.append(volume['id'])
         return volume_ids
 
-    def get_ds8000_objects_by_type(self, sub_url, ds8000_object_type):
+    def get_ds8000_objects_by_type(self, get_objects_command):
         ds8000_objects = []
-        response = self.get_ds8000_object_from_server(sub_url)
-        parsed_response = json.loads(response.text)['data'][ds8000_object_type]
-        for obj in parsed_response:
+        ds8000_objects_by_type = get_objects_command
+        for obj in ds8000_objects_by_type:
             ds8000_objects.append({
-                "name": obj['name'],
-                "id": obj['id']
+                "name": obj.name,
+                "id": obj.id
             })
         return ds8000_objects
 
@@ -137,56 +125,6 @@ class Ds8000ManagerBase(object):
             user=self.username,
             password=self.password)
         return rest_client
-
-    def get_rest_api_token(self):
-        port = self.module.params['port']
-        schema = self.module.params['http_schema']
-        validate_certs = self.module.params['validate_certs']
-        auth_url = '/tokens'
-        headers = {'Content-Type': 'application/json'}
-        data = '{request:{params:{username:' + self.username + ',password:' + self.password + '}}}'
-
-        response = requests.post(
-            '{schema}://{hostname}:{port}{base_url}{auth}'.format(
-                schema=schema,
-                hostname=self.hostname,
-                port=port,
-                base_url=DEFAULT_BASE_URL,
-                auth=auth_url),
-            headers=headers,
-            data=data,
-            verify=validate_certs)
-        if response.ok:
-            token = self._get_token_from_response(response.text)
-            return token
-        self.module.fail_json(msg="failed to get the rest api token:"
-                                  " {response}".format(response=response.text))
-        return None
-
-    def _get_token_from_response(self, response):
-        return json.loads(response)['token']['token']
-
-    def get_ds8000_object_from_server(self, ds8000_object_url):
-        port = self.module.params['port']
-        schema = self.module.params['http_schema']
-        validate_certs = self.module.params['validate_certs']
-        try:
-            response = requests.get(
-                '{schema}://{hostname}:{port}{base_url}{custom}'.format(
-                    schema=schema,
-                    hostname=self.hostname,
-                    port=port,
-                    base_url=DEFAULT_BASE_URL,
-                    custom=ds8000_object_url),
-                headers=self.headers,
-                verify=validate_certs)
-            return response
-        except Exception as generic_exc:
-            self.module.fail_json(
-                msg="Failed to get ds8000 object list from the server"
-                    " ERR: {error}".format(
-                        error=to_native(generic_exc)))
-
 
 def ds8000_argument_spec():
     return dict(
