@@ -105,6 +105,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
+        supports_check_mode=False,
     )
 
     volume_informer = VolumesInformer(module)
