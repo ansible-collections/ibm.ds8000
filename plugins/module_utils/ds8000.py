@@ -58,15 +58,15 @@ class Ds8000ManagerBase(object):
         pools = self.client.get_pools()
         for pool in pools:
             if pool.stgtype not in BAD_POOL_TYPES:
-                volumes_by_pool = self.get_ds8000_objects_by_type(
+                volumes_by_pool = self.get_ds8000_objects_from_command_output(
                     self.client.get_volumes_by_pool(pool_id=pool.id))
                 volumes.extend(volumes_by_pool)
         return volumes
 
     def verify_ds8000_object_exist(self, ds8000_object_param_name,
-                                   get_objects_command):
+                                   get_objects_from_command_output):
         ds8000_object_name = self.params[ds8000_object_param_name]
-        if self.does_ds8000_object_exist(ds8000_object_param_name, get_objects_command):
+        if self.does_ds8000_object_exist(ds8000_object_param_name, get_objects_from_command_output):
             return True
         self.module.fail_json(
             msg="The {object_type} {object_name} "
@@ -75,19 +75,17 @@ class Ds8000ManagerBase(object):
         return False
 
     def does_ds8000_object_exist(self, ds8000_object_param_name,
-                                 get_objects_command):
+                                 get_objects_from_command_output):
         ds8000_object_name = self.params[ds8000_object_param_name]
-        ds8000_objects_name = self.get_ds8000_objects_name_by_type(get_objects_command)
-        ds8000_objects_id = self.get_ds8000_objects_id_by_type(get_objects_command)
+        ds8000_objects_name = self.get_ds8000_objects_name_from_command_output(get_objects_from_command_output)
+        ds8000_objects_id = self.get_ds8000_objects_id_from_command_output(get_objects_from_command_output)
         return ds8000_object_name in ds8000_objects_name + ds8000_objects_id
 
-    def get_ds8000_objects_name_by_type(self, get_objects_command):
-        ds8000_objects_name_by_type = get_objects_command
-        return [object_type.name for object_type in ds8000_objects_name_by_type]
+    def get_ds8000_objects_name_from_command_output(self, get_objects_from_command_output):
+        return [object_type.name for object_type in get_objects_from_command_output]
 
-    def get_ds8000_objects_id_by_type(self, get_objects_command):
-        ds8000_objects_id_by_type = get_objects_command
-        return [object_type.id for object_type in ds8000_objects_id_by_type]
+    def get_ds8000_objects_id_from_command_output(self, get_objects_from_command_output):
+        return [object_type.id for object_type in get_objects_from_command_output]
 
     def get_volume_ids_from_name(self, volume_name):
         volume_ids = []
@@ -97,10 +95,9 @@ class Ds8000ManagerBase(object):
                 volume_ids.append(volume['id'])
         return volume_ids
 
-    def get_ds8000_objects_by_type(self, get_objects_command):
+    def get_ds8000_objects_from_command_output(self, get_objects_from_command_output):
         ds8000_objects = []
-        ds8000_objects_by_type = get_objects_command
-        for obj in ds8000_objects_by_type:
+        for obj in get_objects_from_command_output:
             ds8000_objects.append({
                 "name": obj.name,
                 "id": obj.id
@@ -125,6 +122,7 @@ class Ds8000ManagerBase(object):
             user=self.username,
             password=self.password)
         return rest_client
+
 
 def ds8000_argument_spec():
     return dict(

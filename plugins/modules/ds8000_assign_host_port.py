@@ -83,7 +83,7 @@ class HostPortAssigner(Ds8000ManagerBase):
         return {'changed': self.changed, 'failed': self.failed}
 
     def _does_host_port_bound_to_other_hosts(self, host_port):
-        hosts = self.get_ds8000_objects_name_by_type(self.client.get_hosts())
+        hosts = self.get_ds8000_objects_name_from_command_output(self.client.get_hosts())
         name = self.params['name']
         for host in hosts:
             if host != name:

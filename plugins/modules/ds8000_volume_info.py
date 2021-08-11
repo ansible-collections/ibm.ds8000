@@ -78,10 +78,10 @@ class VolumesInformer(Ds8000ManagerBase):
         volumes_by_host = []
         volumes_by_pool = []
         if self.params['host'] and self.verify_ds8000_object_exist('host', self.client.get_hosts()):
-            volumes_by_host = self.get_ds8000_objects_by_type(
+            volumes_by_host = self.get_ds8000_objects_from_command_output(
                 self.client.get_volumes_by_host(host_name=self.params['host']))
         if self.params['pool'] and self.verify_ds8000_object_exist('pool', self.client.get_pools()):
-            volumes_by_pool = self.get_ds8000_objects_by_type(
+            volumes_by_pool = self.get_ds8000_objects_from_command_output(
                 self.client.get_volumes_by_pool(pool_id=self.params['pool']))
         if volumes_by_host and volumes_by_pool:
             volumes_by_pool_and_host = [
