@@ -119,6 +119,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
+        supports_check_mode=False,
     )
 
     host_manager = HostManager(module)

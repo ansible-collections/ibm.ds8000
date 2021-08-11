@@ -189,6 +189,7 @@ def main():
         required_one_of=[
             ['name', 'volume_id'],
         ],
+        supports_check_mode=False,
     )
 
     volume_manager = VolumeManager(module)

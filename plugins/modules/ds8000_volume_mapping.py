@@ -158,6 +158,7 @@ def main():
         required_one_of=[
             ['volume_name', 'volume_id'],
         ],
+        supports_check_mode=False,
     )
 
     volume_mapper = VolumeMapper(module)
