@@ -80,7 +80,7 @@ class HostManager(Ds8000ManagerBase):
     def _add_host(self):
         name = self.params['name']
         host_type = self.params['host_type']
-        if not self.does_ds8000_object_exist('name', 'hosts'):
+        if not self.does_ds8000_object_exist('name', self.client.get_hosts()):
             try:
                 self.client.create_host(host_name=name, hosttype=host_type)
                 self.changed = True
@@ -92,7 +92,7 @@ class HostManager(Ds8000ManagerBase):
 
     def _remove_host(self):
         name = self.params['name']
-        if self.does_ds8000_object_exist('name', 'hosts'):
+        if self.does_ds8000_object_exist('name', self.client.get_hosts()):
             try:
                 self.client.delete_host(host_name=name)
                 self.changed = True
@@ -119,6 +119,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
+        supports_check_mode=False,
     )
 
     host_manager = HostManager(module)

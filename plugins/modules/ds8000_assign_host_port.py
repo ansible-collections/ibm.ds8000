@@ -83,7 +83,7 @@ class HostPortAssigner(Ds8000ManagerBase):
         return {'changed': self.changed, 'failed': self.failed}
 
     def _does_host_port_bound_to_other_hosts(self, host_port):
-        hosts = self.get_ds8000_objects_name_by_type('hosts')
+        hosts = self.get_ds8000_objects_name_from_command_output(self.client.get_hosts())
         name = self.params['name']
         for host in hosts:
             if host != name:
@@ -100,11 +100,8 @@ class HostPortAssigner(Ds8000ManagerBase):
         return False
 
     def _get_all_host_ports_under_host(self, host_name):
-        host_ports_url = "/hosts/{host_name}/host_ports".format(
-            host_name=host_name)
-        response = self.get_ds8000_object_from_server(host_ports_url)
-        host_ports = json.loads(response.text)['data']['host_ports']
-        return [host_port['wwpn'] for host_port in host_ports]
+        host_ports = self.client.get_host_ports_by_host(host_name=host_name)
+        return [host_port.id for host_port in host_ports]
 
     def _assign_host_port_to_host(self, host_port):
         name = self.params['name']
@@ -138,11 +135,12 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
+        supports_check_mode=False,
     )
 
     host_port_assigner = HostPortAssigner(module)
 
-    if host_port_assigner.verify_ds8000_object_exist('name', 'hosts'):
+    if host_port_assigner.verify_ds8000_object_exist('name', host_port_assigner.client.get_hosts()):
         for host_port in module.params['host_port']:
             host_port = host_port.replace(':', '')
             result = host_port_assigner.verify_assign_host_port(host_port)

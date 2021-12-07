@@ -23,7 +23,7 @@ options:
     type: str
   pool:
     description:
-      - The pool that the volumes are belong to.
+      - The pool id that the volumes are belong to.
     type: str
 extends_documentation_fragment:
   - ibm.ds8000.ds8000.documentation
@@ -77,12 +77,12 @@ class VolumesInformer(Ds8000ManagerBase):
     def volume_info(self):
         volumes_by_host = []
         volumes_by_pool = []
-        if self.params['host'] and self.verify_ds8000_object_exist('host', 'hosts'):
-            volumes_by_host = self.get_ds8000_objects_by_type(
-                '/hosts/{hosts}/volumes'.format(hosts=self.params['host']), 'volumes')
-        if self.params['pool'] and self.verify_ds8000_object_exist('pool', 'pools'):
-            volumes_by_pool = self.get_ds8000_objects_by_type(
-                '/pools/{pool}/volumes'.format(pool=self.params['pool']), 'volumes')
+        if self.params['host'] and self.verify_ds8000_object_exist('host', self.client.get_hosts()):
+            volumes_by_host = self.get_ds8000_objects_from_command_output(
+                self.client.get_volumes_by_host(host_name=self.params['host']))
+        if self.params['pool'] and self.verify_ds8000_object_exist('pool', self.client.get_pools()):
+            volumes_by_pool = self.get_ds8000_objects_from_command_output(
+                self.client.get_volumes_by_pool(pool_id=self.params['pool']))
         if volumes_by_host and volumes_by_pool:
             volumes_by_pool_and_host = [
                 volume_dict for volume_dict in volumes_by_host if volume_dict in volumes_by_pool]
@@ -105,6 +105,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
+        supports_check_mode=True,
     )
 
     volume_informer = VolumesInformer(module)

@@ -62,7 +62,7 @@ options:
     type: str
   pool:
     description:
-      - The pool that the volume will be created on.
+      - The pool id that the volume will be created on.
     type: str
   storage_allocation_method:
     description:
@@ -189,6 +189,7 @@ def main():
         required_one_of=[
             ['name', 'volume_id'],
         ],
+        supports_check_mode=False,
     )
 
     volume_manager = VolumeManager(module)
