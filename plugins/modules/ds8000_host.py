@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2021, Matan Carmeli <matan.carmeli7@gmail.com>
+# Copyright (C) 2021 IBM CORPORATION
+# Author(s): Matan Carmeli <matan.carmeli7@gmail.com>
+#
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
