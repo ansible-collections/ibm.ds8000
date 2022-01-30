@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2021, Matan Carmeli <matan.carmeli7@gmail.com>
+# Copyright (C) 2021 IBM CORPORATION
+# Author(s): Matan Carmeli <matan.carmeli7@gmail.com>
+#
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -66,10 +68,10 @@ try:
 except ImportError:
     pass
 
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (Ds8000ManagerBase, ds8000_argument_spec)
-
-from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.common.text.converters import to_native
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (
+    Ds8000ManagerBase, ds8000_argument_spec)
 
 
 class HostPortAssigner(Ds8000ManagerBase):
