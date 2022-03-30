@@ -1,0 +1,5 @@
+plugins/modules/ds8000_host_port.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
+plugins/modules/ds8000_host.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
+plugins/modules/ds8000_volume_info.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
+plugins/modules/ds8000_volume_mapping.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
+plugins/modules/ds8000_volume.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
