@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2021 IBM CORPORATION
-# Author(s): Matan Carmeli <matan.carmeli7@gmail.com>
-#
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
 
@@ -12,15 +10,17 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-author: Matan Carmeli (@matancarmeli7)
 module: ds8000_host
 short_description: Manage DS8000 hosts
 description:
   - Manage DS8000 hosts.
+version_added: "1.0.0"
+author: Matan Carmeli (@matancarmeli7)
 options:
   name:
     description:
       - The name of the DS8000 host to work with.
+    required: true
     type: str
   state:
     description:
@@ -32,9 +32,11 @@ options:
       - absent
   host_type:
     description:
-    - The host type of the host that will be created at DS8000 storage.
+    - The host type of the host that will be created on the DS8000 storage system.
     type: str
-    default: Linuxrhel
+    default: Linux
+notes:
+  - Supports C(check_mode).
 extends_documentation_fragment:
   - ibm.ds8000.ds8000.documentation
 '''
@@ -59,77 +61,68 @@ EXAMPLES = r'''
 
 RETURN = r''' # '''
 
-from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
-
-from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import (Ds8000ManagerBase, ds8000_argument_spec,
-                                                                        ABSENT, PRESENT)
+from ansible.module_utils.common.text.converters import to_native
+from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000ManagerBase, ds8000_argument_spec, ABSENT, PRESENT
 
 
 class HostManager(Ds8000ManagerBase):
-    def ensure_host_present(self):
-        result = self._verify_host_state(self._add_host)
-        return result
-
-    def ensure_host_absent(self):
-        result = self._verify_host_state(self._remove_host)
-        return result
-
-    def _verify_host_state(self, host_state):
-        host_state()
+    def host_present(self):
+        self._create_host()
         return {'changed': self.changed, 'failed': self.failed}
 
-    def _add_host(self):
+    def host_absent(self):
+        self._delete_host()
+        return {'changed': self.changed, 'failed': self.failed}
+
+    def _create_host(self):
         name = self.params['name']
         host_type = self.params['host_type']
-        if not self.does_ds8000_object_exist('name', self.client.get_hosts()):
+        if not self._does_host_exist():
             try:
-                self.client.create_host(host_name=name, hosttype=host_type)
+                if not self.module.check_mode:
+                    self.client.create_host(host_name=name, hosttype=host_type)
                 self.changed = True
             except Exception as generic_exc:
                 self.failed = True
                 self.module.fail_json(
-                    msg="Failed to add {host_name} host to the DS8000 storage. ERR: {error}".format(
-                        host_name=name, error=to_native(generic_exc)))
+                    msg="Failed to create the host {host_name} on the DS8000 storage. ERR: {error}".format(host_name=name, error=to_native(generic_exc))
+                )
 
-    def _remove_host(self):
+    def _delete_host(self):
         name = self.params['name']
-        if self.does_ds8000_object_exist('name', self.client.get_hosts()):
+        if self._does_host_exist():
             try:
-                self.client.delete_host(host_name=name)
+                if not self.module.check_mode:
+                    self.client.delete_host(host_name=name)
                 self.changed = True
             except Exception as generic_exc:
                 self.failed = True
                 self.module.fail_json(
-                    msg="Failed to remove {host_name} host from the DS8000 storage."
-                        " ERR: {error}".format(
-                            host_name=name, error=to_native(generic_exc)))
+                    msg="Failed to delete the host {host_name} from the DS8000 storage. ERR: {error}".format(host_name=name, error=to_native(generic_exc))
+                )
+
+    def _does_host_exist(self):
+        return self.does_ds8000_object_exist(self.client.get_host, host_name=self.params['name'])
 
 
 def main():
     argument_spec = ds8000_argument_spec()
     argument_spec.update(
-        name=dict(type='str'),
-        state=dict(
-            type='str',
-            default=PRESENT,
-            choices=[
-                ABSENT,
-                PRESENT]),
-        host_type=dict(type='str', default='Linuxrhel')
+        name=dict(type='str', required=True), state=dict(type='str', default=PRESENT, choices=[ABSENT, PRESENT]), host_type=dict(type='str', default='Linux')
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=False,
+        supports_check_mode=True,
     )
 
     host_manager = HostManager(module)
 
     if module.params['state'] == PRESENT:
-        result = host_manager.ensure_host_present()
+        result = host_manager.host_present()
     elif module.params['state'] == ABSENT:
-        result = host_manager.ensure_host_absent()
+        result = host_manager.host_absent()
 
     if result['failed']:
         module.fail_json(**result)

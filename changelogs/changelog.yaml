@@ -1,1 +1,20 @@
-releases: {}
+ancestor: null
+releases:
+  1.0.0:
+    modules:
+    - description: Manage DS8000 hosts
+      name: ds8000_host
+      namespace: ''
+    - description: Manage host ports for a DS8000 host
+      name: ds8000_host_port
+      namespace: ''
+    - description: Manage DS8000 volumes
+      name: ds8000_volume
+      namespace: ''
+    - description: Return basic info on DS8000 volumes
+      name: ds8000_volume_info
+      namespace: ''
+    - description: Manage DS8000 volume mapping to hosts
+      name: ds8000_volume_mapping
+      namespace: ''
+    release_date: '2022-03-29'

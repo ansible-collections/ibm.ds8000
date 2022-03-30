@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2021 IBM CORPORATION
-# Author(s): Matan Carmeli <matan.carmeli7@gmail.com>
-#
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
 
 from __future__ import absolute_import, division, print_function
 
@@ -12,12 +10,13 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-author: Matan Carmeli (@matancarmeli7)
 module: ds8000_volume_info
 short_description: Return basic info on DS8000 volumes
 description:
-  - Return basic information pertaining to a DS8000 volumes.
-  - If the host and pool parameters are not set, it will give information on all the volumes in the storage.
+  - Return basic information pertaining to DS8000 volumes.
+  - If the optional parameters are not set, information on all volumes on the DS8000 storage system will be returned.
+version_added: "1.0.0"
+author: Matan Carmeli (@matancarmeli7)
 options:
   host:
     description:
@@ -27,6 +26,8 @@ options:
     description:
       - The pool id that the volumes are belong to.
     type: str
+notes:
+  - Supports C(check_mode).
 extends_documentation_fragment:
   - ibm.ds8000.ds8000.documentation
 '''
@@ -54,8 +55,8 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-virtual_machines:
-  description: list of dictionary of volumes and their information
+volumes:
+  description: A list of dictionaries describing the volumes.
   returned: success
   type: list
   sample: [
@@ -64,11 +65,22 @@ virtual_machines:
         "id": "volume_id"
     }
   ]
+  contains:
+    volume:
+      description: A dictionary describing the volume properties.
+      type: dict
+      contains:
+        id:
+          description: Volume ID.
+          type: str
+          sample: '1000'
+        name:
+          description: Volume name.
+          type: str
+          sample: 'ansible'
 '''
-import json
 
 from ansible.module_utils.basic import AnsibleModule
-
 from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000ManagerBase, ds8000_argument_spec
 
 DEFAULT_POOLS_URL = '/pools'
@@ -79,15 +91,12 @@ class VolumesInformer(Ds8000ManagerBase):
     def volume_info(self):
         volumes_by_host = []
         volumes_by_pool = []
-        if self.params['host'] and self.verify_ds8000_object_exist('host', self.client.get_hosts()):
-            volumes_by_host = self.get_ds8000_objects_from_command_output(
-                self.client.get_volumes_by_host(host_name=self.params['host']))
-        if self.params['pool'] and self.verify_ds8000_object_exist('pool', self.client.get_pools()):
-            volumes_by_pool = self.get_ds8000_objects_from_command_output(
-                self.client.get_volumes_by_pool(pool_id=self.params['pool']))
+        if self.params['host'] and self.verify_ds8000_object_exist(self.client.get_host, host_name=self.params['host']):
+            volumes_by_host = self.get_ds8000_objects_from_command_output(self.client.get_volumes_by_host(host_name=self.params['host']))
+        if self.params['pool'] and self.verify_ds8000_object_exist(self.client.get_pool, pool_id=self.params['pool']):
+            volumes_by_pool = self.get_ds8000_objects_from_command_output(self.client.get_volumes_by_pool(pool_id=self.params['pool']))
         if volumes_by_host and volumes_by_pool:
-            volumes_by_pool_and_host = [
-                volume_dict for volume_dict in volumes_by_host if volume_dict in volumes_by_pool]
+            volumes_by_pool_and_host = [volume_dict for volume_dict in volumes_by_host if volume_dict in volumes_by_pool]
             return volumes_by_pool_and_host
         elif volumes_by_host and not volumes_by_pool:
             return volumes_by_host
@@ -100,10 +109,7 @@ class VolumesInformer(Ds8000ManagerBase):
 
 def main():
     argument_spec = ds8000_argument_spec()
-    argument_spec.update(
-        host=dict(type='str'),
-        pool=dict(type='str')
-    )
+    argument_spec.update(host=dict(type='str'), pool=dict(type='str'))
 
     module = AnsibleModule(
         argument_spec=argument_spec,
