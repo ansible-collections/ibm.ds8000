@@ -36,7 +36,7 @@ options:
   port:
     description:
     - The port number of the DS8000 storage system HMC.
-    type: str
+    type: int
     default: 8452
 requirements:
   - pyds8k >= 1.4.0
