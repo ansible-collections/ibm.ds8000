@@ -176,4 +176,4 @@ See the [changelog](https://github.com/ansible-collections/ibm.ds8000/tree/main/
 
 Apache License, Version 2.0
 
-See [LICENSE]((https://opensource.org/licenses/Apache-2.0) to see the full text.
+See [LICENSE](https://opensource.org/licenses/Apache-2.0) to see the full text.
