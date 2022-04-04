@@ -72,7 +72,7 @@ class Ds8000ManagerBase(object):
     def does_ds8000_object_exist(self, function, *args, **kwargs):
         try:
             return function(*args, **kwargs)
-        except pyds8k.exceptions.NotFound as generic_exc:
+        except pyds8k.exceptions.NotFound:
             return None
         except Exception as generic_exc:
             self.failed = True
@@ -102,6 +102,6 @@ def ds8000_argument_spec():
         hostname=dict(type='str', required=True),
         username=dict(type='str', required=True),
         password=dict(type='str', no_log=True, required=True),
-        port=dict(type='str', required=False, default='8452'),
+        port=dict(type='int', required=False, default=8452),
         validate_certs=dict(type='bool', required=False, default=True),
     )
