@@ -46,6 +46,7 @@ class Ds8000ManagerBase(object):
         self.hostname = module.params['hostname']
         self.username = module.params['username']
         self.password = module.params['password']
+        self.port = module.params['port']
         self.validate_certs = module.params['validate_certs']
         self.client = self.connect_to_api()
         self.changed = False
@@ -93,7 +94,7 @@ class Ds8000ManagerBase(object):
         return ds8000_objects
 
     def connect_to_api(self):
-        rest_client = Client(service_address=self.hostname, user=self.username, password=self.password, verify=self.validate_certs)
+        rest_client = Client(service_address=self.hostname, user=self.username, password=self.password, port=self.port, verify=self.validate_certs)
         return rest_client
 
 
