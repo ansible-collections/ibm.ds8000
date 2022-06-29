@@ -24,7 +24,7 @@ options:
     type: str
   state:
     description:
-    - Specify the state the DS8000 volume should be in.
+      - Specify the state the DS8000 volume should be in.
     type: str
     default: present
     choices:
@@ -143,21 +143,18 @@ class VolumeManager(Ds8000ManagerBase):
         return {'changed': self.changed, 'failed': self.failed}
 
     def _create_volume(self):
-        volume_type = self.params['volume_type']
         try:
             kwargs = dict(
                 name=self.params['name'],
                 cap=self.params['capacity'],
                 pool=self.params['pool'],
+                stgtype=self.params['volume_type'],
                 tp=self.params['storage_allocation_method'],
                 captype=self.params['capacity_type'],
                 lss=self.params['lss'],
             )
             volumes = []
-            if volume_type == 'fb':
-                volumes = self.client.create_volume_fb(**kwargs)
-            elif volume_type == 'ckd':
-                volumes = self.client.create_volume_ckd(**kwargs)
+            volumes = self.client.create_volume(**kwargs)
             self.volume_facts = self.get_ds8000_objects_from_command_output(volumes)
             self.changed = True
         except Exception as generic_exc:
