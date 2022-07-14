@@ -1,0 +1,51 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+# Test code for the ds8000_pool_info module
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_pool_info integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Query all pools
+      ibm.ds8000.ds8000_pool_info:
+      register: result
+    - name: Verify the command was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Query pool by id
+      ibm.ds8000.ds8000_pool_info:
+        id: "{{result.pools[0].id}}"
+      register: result_one
+    - name: Verify the id is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result_one.pools[0].id == result.pools[0].id"
+
+    # Error Path
+    - name: Query pool by non existent id
+      ibm.ds8000.ds8000_pool_info:
+        id: "{{ pool_non_existent }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify non existent id failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")

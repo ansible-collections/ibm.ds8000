@@ -1,0 +1,168 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_volume_info integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Query volume by id
+      ibm.ds8000.ds8000_volume_info:
+        volume_id: "{{ volume_id }}"
+      register: result
+    - name: Verify the volume id is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].id == "{{ volume_id }}"
+
+    - name: Query volumes by pool
+      ibm.ds8000.ds8000_volume_info:
+        pool: "{{ pool }}"
+      register: result
+    - name: Verify the pool is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].pool == "{{ pool }}"
+
+    - name: Query volumes by host
+      ibm.ds8000.ds8000_volume_info:
+        host: "{{ host }}"
+      register: result
+    - name: Verify the command was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Query volumes by lss
+      ibm.ds8000.ds8000_volume_info:
+        lss: "{{ lss }}"
+      register: result
+    - name: Verify the lss is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].lss == "{{ lss }}"
+
+    - name: Query volumes by host and lss and pool
+      ibm.ds8000.ds8000_volume_info:
+        host: "{{ host }}"
+        pool: "{{ pool }}"
+        lss: "{{ lss }}"
+      register: result
+    - name: Verify the lss and pool are correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].lss == "{{ lss }}"
+          - result.volumes[0].pool == "{{ pool }}"
+
+    - name: Query volumes by host and lss
+      ibm.ds8000.ds8000_volume_info:
+        host: "{{ host }}"
+        lss: "{{ lss }}"
+      register: result
+    - name: Verify the host and lss are correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].lss == "{{ lss }}"
+
+    - name: Query volumes by host and pool
+      ibm.ds8000.ds8000_volume_info:
+        host: "{{ host }}"
+        pool: "{{ pool }}"
+      register: result
+    - name: Verify the pool is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].pool == "{{ pool }}"
+
+    - name: Query volumes by lss and pool
+      ibm.ds8000.ds8000_volume_info:
+        lss: "{{ lss }}"
+        pool: "{{ pool }}"
+      register: result
+    - name: Verify the lss and pool are correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].pool == "{{ pool }}"
+          - result.volumes[0].lss == "{{ lss }}"
+
+    - name: Query all volumes
+      ibm.ds8000.ds8000_volume_info:
+      register: result
+    - name: Verify the command was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    # Error Path
+    - name: Query volumes by non existent pool
+      ibm.ds8000.ds8000_volume_info:
+        pool: "{{ pool_non_existent }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the non existent pool failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
+
+    - name: Query volumes by non existent host
+      ibm.ds8000.ds8000_volume_info:
+        host: not_there
+      register: result
+      ignore_errors: yes
+    - name: Verify the non existent host failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
+
+    - name: Query volumes by non existent lss
+      ibm.ds8000.ds8000_volume_info:
+        lss: "{{ lss_non_existent }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the non existent lss failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
+
+    - name: Query volume by non existent id
+      ibm.ds8000.ds8000_volume_info:
+        volume_id: "{{ volume_id_non_existent }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the non existent id failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")

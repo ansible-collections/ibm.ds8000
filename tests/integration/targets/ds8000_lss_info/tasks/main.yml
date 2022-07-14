@@ -1,0 +1,109 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+# Test code for the ds8000_lss_info module
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_lss_info integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Query all lsses
+      ibm.ds8000.ds8000_lss_info:
+      register: result
+    - name: Verify the command was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Query lss by id
+      ibm.ds8000.ds8000_lss_info:
+        id: "{{lss}}"
+      register: result
+    - name: Verify the lss id was correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result.lss[0].id == '{{lss}}'"
+
+    - name: Query lsses by type ckd
+      ibm.ds8000.ds8000_lss_info:
+        lss_type: ckd
+      register: result
+    - name: Verify the ckd type was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result.lss[0].type == 'ckd'"
+
+    - name: Query lsses by type fb
+      ibm.ds8000.ds8000_lss_info:
+        lss_type: fb
+      register: result
+    - name: Verify the fb type was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result.lss[0].type == 'fb'"
+
+    # Error Path
+    - name: Query lsses by invalid id
+      ibm.ds8000.ds8000_lss_info:
+        lss: "{{ lss_invalid }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the invalid id failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
+
+    - name: Query lsses by non existent id
+      ibm.ds8000.ds8000_lss_info:
+        id: "{{ lss_non_existent }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the non existent lss failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
+
+    - name: Query lsses by invalid type
+      ibm.ds8000.ds8000_lss_info:
+        lss_type: "{{ lss_type_invalid }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the invalid type failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'value of lss_type must be one of: fb, ckd, got: invalid' in result.msg"
+
+    # Needs a DS8000 without both types created
+    # -name: Query lsses by non existent type
+    #   ibm.ds8000.ds8000_lss_info:
+    #     lss_type: fb
+    #   register: result
+    #   ignore_errors: yes
+    # - name: Verify the non existent type failed
+    #   ansible.builtin.assert:
+    #     that:
+    #       - result is failure
+    #       - result is not changed

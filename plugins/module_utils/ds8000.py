@@ -61,8 +61,10 @@ class Ds8000ManagerBase(object):
         return volumes
 
     def verify_ds8000_object_exist(self, function, *args, **kwargs):
-        if self.does_ds8000_object_exist(function, *args, **kwargs):
-            return True
+        obj = self.does_ds8000_object_exist(function, *args, **kwargs)
+        if obj:
+            # The returned object should test as True
+            return obj
         self.module.fail_json(
             msg="Function: {function}, args: {arguments}, kwargs: {kwarguments} returned no objects on the DS8000 storage system.".format(
                 function=function.__name__, arguments=args, kwarguments=json.dumps(kwargs)
@@ -87,10 +89,23 @@ class Ds8000ManagerBase(object):
                 volume_ids.append(volume['id'])
         return volume_ids
 
+    def delete_representation_keys(self, representation, key_list=None):
+        if key_list:
+            for entry in representation:
+                for key in key_list:
+                    entry.pop(key, None)
+        return representation
+
     def get_ds8000_objects_from_command_output(self, command_output):
         ds8000_objects = []
-        for obj in command_output:
-            ds8000_objects.append({"name": obj.name, "id": obj.id})
+        if isinstance(command_output, list):
+            for obj in command_output:
+                representation = obj.representation
+                ds8000_objects.append(representation)
+        else:
+            representation = command_output.representation
+            ds8000_objects.append(representation)
+
         return ds8000_objects
 
     def connect_to_api(self):
