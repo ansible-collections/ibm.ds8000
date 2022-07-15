@@ -30,11 +30,12 @@ options:
     choices:
       - present
       - absent
-  volume_id:
+  id:
     description:
       - The volume ID of the DS8000 volume to work with.
       - Required when I(state=absent)
     type: str
+    aliases: [ volume_id ]
   volume_type:
     description:
       - The volume type that will be created.
@@ -104,7 +105,7 @@ EXAMPLES = r'''
     hostname: "{{ ds8000_host }}"
     username: "{{ ds8000_username }}"
     password: "{{ ds8000_password }}"
-    name: volume_name_test
+    id: "FFFF"
     state: absent
 '''
 
@@ -113,24 +114,30 @@ volumes:
     description: A list of dictionaries describing the volumes.
     returned: I(state=present) changed
     type: list
+    elements: dict
     contains:
-      volume:
-        description: A dictionary describing the volume properties.
-        type: dict
-        contains:
-          id:
-            description: Volume ID.
-            type: str
-            sample: "1000"
-          name:
-            description: Volume name.
-            type: str
-            sample: "ansible"
+      id:
+        description: Volume ID.
+        type: str
+        sample: "1000"
+      name:
+        description: Volume name.
+        type: str
+        sample: "ansible"
+    sample: |
+      [
+        {
+          "id": "3001",
+          "name": "ansible"
+        }
+      ]
 '''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000ManagerBase, ds8000_argument_spec, ABSENT, PRESENT
+
+REPR_KEYS_TO_DELETE = ['link', 'hosts', 'flashcopy', 'pprc']
 
 
 class VolumeManager(Ds8000ManagerBase):
@@ -138,8 +145,8 @@ class VolumeManager(Ds8000ManagerBase):
         self._create_volume()
         return {'changed': self.changed, 'failed': self.failed, 'volumes': self.volume_facts}
 
-    def volume_absent(self, volume_id=''):
-        self._delete_ds8000_volume(volume_id)
+    def volume_absent(self, id=''):
+        self._delete_ds8000_volume(id)
         return {'changed': self.changed, 'failed': self.failed}
 
     def _create_volume(self):
@@ -161,15 +168,14 @@ class VolumeManager(Ds8000ManagerBase):
             self.failed = True
             self.module.fail_json(msg="Failed to create volume on the DS8000 storage system. ERR: {error}".format(error=to_native(generic_exc)))
 
-    def _delete_ds8000_volume(self, volume_id):
+    def _delete_ds8000_volume(self, id):
         try:
-            self.client.delete_volume(volume_id)
+            self.client.delete_volume(id)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True
             self.module.fail_json(
-                msg="Failed to delete the volume {volume_id} from the DS8000 storage system. "
-                "ERR: {error}".format(volume_id=volume_id, error=to_native(generic_exc))
+                msg="Failed to delete the volume {id} from the DS8000 storage system. " "ERR: {error}".format(id=id, error=to_native(generic_exc))
             )
 
 
@@ -178,20 +184,20 @@ def main():
     argument_spec.update(
         name=dict(type='str'),
         state=dict(type='str', default=PRESENT, choices=[ABSENT, PRESENT]),
-        volume_type=dict(type='str', default='fb', choices=['fb', 'ckd']),
+        volume_type=dict(type='str', default='fb', choices=['fb', 'ckd']),  # TODO change to stg_type?
         pool=dict(type='str'),
         capacity=dict(type='str'),
         capacity_type=dict(type='str', default='gib', choices=['gib', 'bytes', 'cyl', 'mod1']),
         lss=dict(type='str'),
         storage_allocation_method=dict(type='str', default='none', choices=['none', 'ese', 'tse']),
-        volume_id=dict(type='str'),
+        id=dict(type='str', aliases=['volume_id']),
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
         required_if=[
             ['state', PRESENT, ('name', 'capacity', 'pool')],
-            ['state', ABSENT, ('volume_id',)],
+            ['state', ABSENT, ('id',)],
         ],
         supports_check_mode=False,
     )
@@ -201,7 +207,7 @@ def main():
     if module.params['state'] == PRESENT:
         result = volume_manager.volume_present()
     elif module.params['state'] == ABSENT:
-        result = volume_manager.volume_absent(volume_id=module.params['volume_id'])
+        result = volume_manager.volume_absent(id=module.params['id'])
 
     if result['failed']:
         module.fail_json(**result)

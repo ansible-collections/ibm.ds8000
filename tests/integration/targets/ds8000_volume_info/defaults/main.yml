@@ -1,0 +1,7 @@
+host: janus
+lss: B0
+lss_non_existent: E0
+pool: P0
+pool_non_existent: P1024
+volume_id: B100
+volume_id_non_existent: FFFF

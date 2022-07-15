@@ -38,7 +38,12 @@ This collection supports Python versions >=3.6 as required by pyds8k.
 | Name                  | Description                           |
 | --------------------- | ------------------------------------- |
 | ds8000_host_port      | Manage host ports for a DS8000 host   |
+| ds8000_host_port_info | Return info on DS8000 host ports      |
 | ds8000_host           | Manage DS8000 hosts                   |
+| ds8000_host_info      | Return info on DS8000 hosts           |
+| ds8000_lss_info       | Return info on DS8000 lsses           |
+| ds8000_marray_info    | Return info on DS8000 managed arrays  |
+| ds8000_pool_info      | Return info on DS8000 pools           |
 | ds8000_volume_info    | Return basic info on DS8000 volumes   |
 | ds8000_volume_mapping | Manage DS8000 volume mapping to hosts |
 | ds8000_volume         | Manage DS8000 volumes                 |
