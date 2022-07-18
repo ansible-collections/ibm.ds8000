@@ -1,0 +1,14 @@
+lss_0: "90"
+lss_1: "91"
+lss_exists: "00"
+lss_exists_fb: "A0"
+lss_non_existent: E0
+lss_invalid: C875161A
+ssid_0: "9000"
+ssid_1: "9001"
+ckd_type: 3990-3
+ckd_type_invalid: 3333-3
+ssid_exists: "5031"
+ssid_new: "ffff"
+ssid_invalid: EGDSN
+lss_type_invalid: invalid

@@ -47,6 +47,7 @@ This collection supports Python versions >=3.6 as required by pyds8k.
 | ds8000_volume_info    | Return basic info on DS8000 volumes   |
 | ds8000_volume_mapping | Manage DS8000 volume mapping to hosts |
 | ds8000_volume         | Manage DS8000 volumes                 |
+| ds8000_lss            | Manage DS8000 lsses                   |
 
 ## Idempotency
 
