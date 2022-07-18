@@ -1,0 +1,4 @@
+host: ansible
+host_two: ansible_2
+host_type: Linux
+host_port_wwpn: ["FEEDDEADBEEFFFFE", "FEEDDEADBEEFFFFF"]

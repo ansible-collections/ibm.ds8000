@@ -87,6 +87,9 @@ class Ds8000ManagerBase(object):
         for volume in volumes:
             if volume['name'] == volume_name:
                 volume_ids.append(volume['id'])
+        if not volume_ids:
+            self.failed = True
+            self.module.fail_json(msg="Unable to find volume name {volume_name} on the DS8000 storage system.".format(volume_name=volume_name))
         return volume_ids
 
     def delete_representation_keys(self, representation, key_list=None):

@@ -176,8 +176,7 @@ class HostPortManager(Ds8000ManagerBase):
 
     def verify_delete_host_port(self, host_port):
         if self._does_host_port_exist(host_port):
-            if not self.module.check_mode:
-                self._delete_host_port(host_port)
+            self._delete_host_port(host_port)
         return {'changed': self.changed, 'failed': self.failed}
 
     def _delete_host_port(self, host_port):
