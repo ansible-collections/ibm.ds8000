@@ -32,6 +32,13 @@ plugins/modules/ds8000_host_info.py import-3.5!skip # python_requires: '>=3.6'
 plugins/modules/ds8000_host_info.py compile-2.6!skip # python_requires: '>=3.6'
 plugins/modules/ds8000_host_info.py compile-2.7!skip # python_requires: '>=3.6'
 plugins/modules/ds8000_host_info.py compile-3.5!skip # python_requires: '>=3.6'
+plugins/modules/ds8000_lss.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
+plugins/modules/ds8000_lss.py import-2.6!skip # python_requires: '>=3.6'
+plugins/modules/ds8000_lss.py import-2.7!skip # python_requires: '>=3.6'
+plugins/modules/ds8000_lss.py import-3.5!skip # python_requires: '>=3.6'
+plugins/modules/ds8000_lss.py compile-2.6!skip # python_requires: '>=3.6'
+plugins/modules/ds8000_lss.py compile-2.7!skip # python_requires: '>=3.6'
+plugins/modules/ds8000_lss.py compile-3.5!skip # python_requires: '>=3.6'
 plugins/modules/ds8000_lss_info.py validate-modules:missing-gplv3-license # Licence is Apache-2.0
 plugins/modules/ds8000_lss_info.py import-2.6!skip # python_requires: '>=3.6'
 plugins/modules/ds8000_lss_info.py import-2.7!skip # python_requires: '>=3.6'
