@@ -1,0 +1,6 @@
+host: ansible
+host_wrong: janus
+vol_name: ansible
+vol_id_mapped: A000
+pool_fb: P0
+capacity_fb: 1

@@ -1,0 +1,193 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_volume integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Create fb volume
+      ibm.ds8000.ds8000_volume:
+        name: "{{ vol_name }}"
+        state: present
+        pool: "{{ pool_fb }}"
+        capacity: "{{ capacity_fb }}"
+      register: result
+    - name: Verify the fb volume
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+          - "result.volumes[0].name == '{{vol_name}}'"
+          # - "result.volumes[0].pool == {{ pool_fb }}"
+          # - "result.volumes[0].cap_gib == {{ capacity_fb }}"
+
+    - name: Delete fb volume
+      ibm.ds8000.ds8000_volume:
+        id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result.volumes }}"
+      register: result
+    - name: Verify the result
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create ckd volume
+      ibm.ds8000.ds8000_volume:
+        name: ansible
+        state: present
+        pool: "{{ pool_ckd }}"
+        capacity: "{{ capacity_ckd }}"
+        capacity_type: cyl
+        volume_type: ckd
+      register: result
+    - name: Verify the ckd volume
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+          - "result.volumes[0].name == '{{ vol_name }}'"
+
+    - name: Delete ckd volume
+      ibm.ds8000.ds8000_volume:
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result.volumes }}"
+      register: result
+    - name: Verify the result
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    # - name: Create 3 fb volumes
+    #   ibm.ds8000.ds8000_volume:
+    #     name: "{{ vol_name }}"
+    #     state: present
+    #     pool: "{{ pool_fb }}"
+    #     capacity: "{{ capacity_fb }}"
+    #     quantity: 3
+    #   register: result
+    # - ansible.builtin.assert:
+    #     that:
+    #       - result is success
+    #       - result is changed
+    #       - "result.volumes[0].name == '{{vol_name}}'" # TODO
+    # - name: Delete fb volumes
+    #   ibm.ds8000.ds8000_volume:
+    #     id: "{{ item.id }}"
+    #     state: absent
+    #   with_items: "{{ result.volumes }}"
+    #   register: result
+
+    # Error Path
+    - name: Test create volume without name
+      ibm.ds8000.ds8000_volume:
+        state: present
+        pool: "{{ pool_fb }}"
+        capacity: "{{ capacity_fb }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify not specifying name failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'state is present but all of the following are missing: name' in result.msg"
+
+    - name: Test create volume without pool
+      ibm.ds8000.ds8000_volume:
+        name: "{{ vol_name }}"
+        state: present
+        capacity: "{{ capacity_fb }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify not specifying pool failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'state is present but all of the following are missing: pool' in result.msg"
+
+    - name: Test create volume without cap
+      ibm.ds8000.ds8000_volume:
+        name: "{{ vol_name }}"
+        state: present
+        pool: "{{ pool_fb }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify not specifying cap failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'state is present but all of the following are missing: capacity' in result.msg"
+
+    - name: Test delete volume name
+      ibm.ds8000.ds8000_volume:
+        name: "blah"
+        state: absent
+      register: result
+      ignore_errors: yes
+    - name: Verify specifying name failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'state is absent but all of the following are missing: id' in result.msg"
+
+    # - name: Create fb volume with ckd pool
+    #   ibm.ds8000.ds8000_volume:
+    #     state: present
+    #     name: fail
+    #     pool: "{{ pool_fb }}"
+    #     capacity: "{{ capacity_fb }}"
+    #   register: result
+    #   ignore_errors: yes
+    # - ansible.builtin.assert:
+    #     that:
+    #       - result is failure
+    #       - result is not changed
+
+    - name: Create fb volume with ckd volume_type
+      ibm.ds8000.ds8000_volume:
+        state: present
+        name: fail
+        pool: "{{ pool_fb }}"
+        capacity: "{{ capacity_fb }}"
+        volume_type: ckd
+      register: result
+      ignore_errors: yes
+    - ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'[BE7A0008] The value for attribute capType: gib is not valid.' in result.msg"
+
+    - name: Create fb volume with ckd cap_type
+      ibm.ds8000.ds8000_volume:
+        state: present
+        name: fail
+        pool: "{{ pool_fb }}"
+        capacity: "{{ capacity_fb }}"
+        capacity_type: cyl
+      register: result
+      ignore_errors: yes
+    - debug:
+        var: result.msg
+    - ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - "'[BE7A0008] The value for attribute capType: cyl is not valid.' in result.msg"

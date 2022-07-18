@@ -1,0 +1,84 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_host integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Use check mode to verify the host would be created
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: present
+      check_mode: yes
+      register: result
+    - name: Verify the host would be created
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: present
+      register: result
+    - name: Verify the host is created
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create the host again
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: present
+      register: result
+    - name: Verify the result is success but not changed
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Use check mode to verify the host would be deleted
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: absent
+      check_mode: yes
+      register: result
+    - name: Verify the host would be deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Delete host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: absent
+      register: result
+    - name: Verify the host is deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Delete the host again
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: absent
+      register: result
+    - name: Verify the result is success but the non existent host is not deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed

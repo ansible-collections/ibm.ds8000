@@ -1,0 +1,185 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_host_port integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Create host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: present
+        host_type: "{{ host_type }}"
+      register: result
+    - name: Verify the host was created
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Use check mode to verify host ports would be assigned to the host
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: present
+        force: False
+        host_port: "{{ host_port_wwpn }}"
+      check_mode: yes
+      register: result
+    - name: Verify the host ports would be assigned to the host
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Assign host ports to host
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: present
+        force: False
+        host_port: "{{ host_port_wwpn }}"
+      register: result
+    - name: Verify the host ports were assigned
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Assign host port again
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: present
+        force: False
+        host_port:
+          - "{{ host_port_wwpn[0] }}"
+      register: result
+    - name: Verify the result is success but not changed
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Use check mode to verify the host ports would be unassigned from the host
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: absent
+        force: False
+        host_port: "{{ host_port_wwpn }}"
+      check_mode: yes
+      register: result
+    - name: Verify the host ports would be unassigned from the host
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Unassign host ports
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: absent
+        force: False
+        host_port: "{{ host_port_wwpn }}"
+      register: result
+    - name: Verify the host ports were unassigned
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Unassign host port again
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: absent
+        force: False
+        host_port:
+          - "{{ host_port_wwpn[0] }}"
+      register: result
+    - name: Verify the result was successful but not changed
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Assign host ports to host again
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host }}"
+        state: present
+        force: False
+        host_port: "{{ host_port_wwpn }}"
+      register: result
+    - name: Verify the host ports were assigned
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create host 2
+      ibm.ds8000.ds8000_host:
+        name: "{{ host_two }}"
+        state: present
+        host_type: "{{ host_type }}"
+      register: result
+    - name: Verify the host was created
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Assign host port already assigned
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host_two }}"
+        state: present
+        force: False
+        host_port: "{{ host_port_wwpn[0] }}"
+      ignore_errors: yes
+      register: result
+    - name: Verify the host port was not assigned
+      ansible.builtin.assert:
+        that:
+          - result is not success
+          - result is not changed
+
+    - name: Assign host port already assigned by force
+      ibm.ds8000.ds8000_host_port:
+        name: "{{ host_two }}"
+        state: present
+        force: True
+        host_port: "{{ host_port_wwpn[0] }}"
+      register: result
+    - name: Verify the existing host port was assigned
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+  always:
+    - name: Delete host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: absent
+      register: result
+    - name: Verify the host was deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Delete new host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host_two }}"
+        state: absent
+      register: result
+    - name: Verify the new host was deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
