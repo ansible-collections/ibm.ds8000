@@ -71,25 +71,26 @@
           - result is success
           - result is changed
 
-    # - name: Create 3 fb volumes
-    #   ibm.ds8000.ds8000_volume:
-    #     name: "{{ vol_name }}"
-    #     state: present
-    #     pool: "{{ pool_fb }}"
-    #     capacity: "{{ capacity_fb }}"
-    #     quantity: 3
-    #   register: result
-    # - ansible.builtin.assert:
-    #     that:
-    #       - result is success
-    #       - result is changed
-    #       - "result.volumes[0].name == '{{vol_name}}'" # TODO
-    # - name: Delete fb volumes
-    #   ibm.ds8000.ds8000_volume:
-    #     id: "{{ item.id }}"
-    #     state: absent
-    #   with_items: "{{ result.volumes }}"
-    #   register: result
+    - name: Create 3 fb volumes
+      ibm.ds8000.ds8000_volume:
+        name: "{{ vol_name }}"
+        state: present
+        pool: "{{ pool_fb }}"
+        capacity: "{{ capacity_fb }}"
+        quantity: 3
+      register: result
+    - ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+          - "result.volumes[0].name == '{{vol_name}}'"
+
+    - name: Delete the 3 fb volumes
+      ibm.ds8000.ds8000_volume:
+        id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result.volumes }}"
+      register: result
 
     # Error Path
     - name: Test create volume without name
