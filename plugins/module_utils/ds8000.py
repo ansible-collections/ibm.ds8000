@@ -115,6 +115,26 @@ class Ds8000ManagerBase(object):
         rest_client = Client(service_address=self.hostname, user=self.username, password=self.password, port=self.port, verify=self.validate_certs)
         return rest_client
 
+    def check_multi_response_results(self, results, item_list=None, item_name='id'):
+        # When multiple objects are worked on, the ds8k rest api returns command success even if each object has failed.
+        # pyds8k returns an object on success and the dict from the rest api on failure.
+        # The rest api dict doesn't specify which object failed, so it can't be identified without tracking the index into the list provided.
+        msg = []
+        for index, result in enumerate(results):
+            item = {}
+            item[item_name] = item_list[index] if item_list else "unknown"
+            if isinstance(result, dict):
+                if result['status'] == 'failed':
+                    self.failed = True
+                    item['message'] = "Failed. ERR: {code} {message}".format(code=result['code'], message=to_native(result['message']))
+                    msg.append(item)
+            else:
+                item['message'] = "Succeeded."
+                msg.append(item)
+
+        if self.failed:
+            self.module.fail_json(msg=msg)
+
 
 def ds8000_argument_spec():
     return dict(

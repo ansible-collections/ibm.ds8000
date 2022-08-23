@@ -3,3 +3,4 @@ pool_fb: P0
 capacity_fb: 1
 pool_ckd: P2
 capacity_ckd: 1113
+ckd_vol_ids: ["20FF", "20FE"]
