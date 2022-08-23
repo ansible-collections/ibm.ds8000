@@ -79,6 +79,11 @@ options:
       - tse
     type: str
     default: none
+  quantity:
+    description:
+      - The number of volumes that will be created.
+    type: int
+    default: 1
 notes:
   - Does not support C(check_mode).
   - Is not idempotent.
@@ -152,6 +157,7 @@ class VolumeManager(Ds8000ManagerBase):
     def _create_volume(self):
         try:
             kwargs = dict(
+                name_col=None,  # create_volumes required arg, needs to be set to None to not use
                 name=self.params['name'],
                 cap=self.params['capacity'],
                 pool=self.params['pool'],
@@ -159,9 +165,10 @@ class VolumeManager(Ds8000ManagerBase):
                 tp=self.params['storage_allocation_method'],
                 captype=self.params['capacity_type'],
                 lss=self.params['lss'],
+                quantity=self.params['quantity'],
             )
             volumes = []
-            volumes = self.client.create_volume(**kwargs)
+            volumes = self.client.create_volumes(**kwargs)
             self.volume_facts = self.get_ds8000_objects_from_command_output(volumes)
             self.changed = True
         except Exception as generic_exc:
@@ -191,6 +198,7 @@ def main():
         lss=dict(type='str'),
         storage_allocation_method=dict(type='str', default='none', choices=['none', 'ese', 'tse']),
         id=dict(type='str', aliases=['volume_id']),
+        quantity=dict(type='int', default=1),
     )
 
     module = AnsibleModule(
