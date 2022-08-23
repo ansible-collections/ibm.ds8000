@@ -92,6 +92,34 @@
       with_items: "{{ result.volumes }}"
       register: result
 
+    - name: Create ckd volumes by id
+      ibm.ds8000.ds8000_volume:
+        name: ansible
+        state: present
+        pool: "{{ pool_ckd }}"
+        capacity: "{{ capacity_ckd }}"
+        capacity_type: cyl
+        volume_type: ckd
+        id: "{{ ckd_vol_ids }}"
+      register: result
+    - name: Verify the ckd volumes by id
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+          - "result.volumes[0].id == '{{ ckd_vol_ids[0] }}'"
+
+    - name: Delete ckd volumes by id
+      ibm.ds8000.ds8000_volume:
+        id: "{{ ckd_vol_ids }}"
+        state: absent
+      register: result
+    - name: Verify the result
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
     # Error Path
     - name: Test create volume without name
       ibm.ds8000.ds8000_volume:

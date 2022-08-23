@@ -32,9 +32,10 @@ options:
       - absent
   id:
     description:
-      - The volume ID of the DS8000 volume to work with.
+      - The volume IDs of the DS8000 volume to work with.
       - Required when I(state=absent)
-    type: str
+    type: list
+    elements: str
     aliases: [ volume_id ]
   volume_type:
     description:
@@ -150,8 +151,10 @@ class VolumeManager(Ds8000ManagerBase):
         self._create_volume()
         return {'changed': self.changed, 'failed': self.failed, 'volumes': self.volume_facts}
 
-    def volume_absent(self, id=''):
-        self._delete_ds8000_volume(id)
+    def volume_absent(self):
+        # TODO DSANSIBLE-39.  For now, loop calls
+        for vol_id in self.params['id']:
+            self._delete_ds8000_volume(vol_id)
         return {'changed': self.changed, 'failed': self.failed}
 
     def _create_volume(self):
@@ -159,6 +162,7 @@ class VolumeManager(Ds8000ManagerBase):
             kwargs = dict(
                 name_col=None,  # create_volumes required arg, needs to be set to None to not use
                 name=self.params['name'],
+                ids=self.params['id'] if self.params['id'] else None,
                 cap=self.params['capacity'],
                 pool=self.params['pool'],
                 stgtype=self.params['volume_type'],
@@ -169,20 +173,22 @@ class VolumeManager(Ds8000ManagerBase):
             )
             volumes = []
             volumes = self.client.create_volumes(**kwargs)
+            self.check_multi_response_results(volumes, item_list=self.params['id'] if self.params['id'] else None, item_name='id')
             self.volume_facts = self.get_ds8000_objects_from_command_output(volumes)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True
             self.module.fail_json(msg="Failed to create volume on the DS8000 storage system. ERR: {error}".format(error=to_native(generic_exc)))
 
-    def _delete_ds8000_volume(self, id):
+    def _delete_ds8000_volume(self, volume_id):
         try:
-            self.client.delete_volume(id)
+            self.client.delete_volume(volume_id)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True
             self.module.fail_json(
-                msg="Failed to delete the volume {id} from the DS8000 storage system. " "ERR: {error}".format(id=id, error=to_native(generic_exc))
+                msg="Failed to delete the volume {volume_id} from the DS8000 storage system. "
+                "ERR: {error}".format(volume_id=volume_id, error=to_native(generic_exc))
             )
 
 
@@ -197,7 +203,7 @@ def main():
         capacity_type=dict(type='str', default='gib', choices=['gib', 'bytes', 'cyl', 'mod1']),
         lss=dict(type='str'),
         storage_allocation_method=dict(type='str', default='none', choices=['none', 'ese', 'tse']),
-        id=dict(type='str', aliases=['volume_id']),
+        id=dict(type='list', elements='str', aliases=['volume_id']),
         quantity=dict(type='int', default=1),
     )
 
@@ -207,6 +213,7 @@ def main():
             ['state', PRESENT, ('name', 'capacity', 'pool')],
             ['state', ABSENT, ('id',)],
         ],
+        mutually_exclusive=[('id', 'quantity')],
         supports_check_mode=False,
     )
 
@@ -215,7 +222,7 @@ def main():
     if module.params['state'] == PRESENT:
         result = volume_manager.volume_present()
     elif module.params['state'] == ABSENT:
-        result = volume_manager.volume_absent(id=module.params['id'])
+        result = volume_manager.volume_absent()
 
     if result['failed']:
         module.fail_json(**result)
