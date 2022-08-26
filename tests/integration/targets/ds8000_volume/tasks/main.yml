@@ -59,6 +59,63 @@
           - result is changed
           - "result.volumes[0].name == '{{ vol_name }}'"
 
+    # Assumes the next ids are available
+    - name: Create ckd alias volumes
+      ibm.ds8000.ds8000_volume:
+        state: present
+        alias: yes
+        alias_order: increment
+        ckd_base_ids: ["{{ result.volumes[0].id }}"]
+        id: "{{ '%X' % ((result.volumes[0].id | int(base=16))+1) }}"
+        quantity: 2
+      register: result_a
+    - name: Verify the ckd alias volumes increment
+      ansible.builtin.assert:
+        that:
+          - result_a is success
+          - result_a is changed
+          - result_a.volumes[0].id == "{{ '%X' % ((result.volumes[0].id | int(base=16))+1) }}"
+
+    - name: Delete ckd alias volumes
+      ibm.ds8000.ds8000_volume:
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_a.volumes }}"
+      register: result_a
+    - name: Verify the result
+      ansible.builtin.assert:
+        that:
+          - result_a is success
+          - result_a is changed
+
+    - name: Create ckd alias volumes decrement
+      ibm.ds8000.ds8000_volume:
+        state: present
+        alias: yes
+        alias_order: decrement
+        ckd_base_ids: ["{{ result.volumes[0].id }}"]
+        id: "{{ '%X' % ((result.volumes[0].id | int(base=16))+4) }}"
+        quantity: 2
+      register: result_a
+    - name: Verify the ckd alias volumes decrement
+      ansible.builtin.assert:
+        that:
+          - result_a is success
+          - result_a is changed
+          - result_a.volumes[0].id == "{{ '%X' % ((result.volumes[0].id | int(base=16))+4) }}"
+
+    - name: Delete ckd alias volumes decrement
+      ibm.ds8000.ds8000_volume:
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_a.volumes }}"
+      register: result_a
+    - name: Verify the result
+      ansible.builtin.assert:
+        that:
+          - result_a is success
+          - result_a is changed
+
     - name: Delete ckd volume
       ibm.ds8000.ds8000_volume:
         volume_id: "{{ item.id }}"
@@ -133,7 +190,7 @@
         that:
           - result is failure
           - result is not changed
-          - "'state is present but all of the following are missing: name' in result.msg"
+          - "'state is present but any of the following are missing: name, alias' in result.msg"
 
     - name: Test create volume without pool
       ibm.ds8000.ds8000_volume:
@@ -147,7 +204,7 @@
         that:
           - result is failure
           - result is not changed
-          - "'state is present but all of the following are missing: pool' in result.msg"
+          - result.msg is search("missing parameter(s) required by 'name': pool")
 
     - name: Test create volume without cap
       ibm.ds8000.ds8000_volume:
@@ -161,7 +218,7 @@
         that:
           - result is failure
           - result is not changed
-          - "'state is present but all of the following are missing: capacity' in result.msg"
+          - result.msg is search("missing parameter(s) required by 'name': capacity")
 
     - name: Test delete volume name
       ibm.ds8000.ds8000_volume:
@@ -198,7 +255,8 @@
         volume_type: ckd
       register: result
       ignore_errors: yes
-    - ansible.builtin.assert:
+    - name: Verify fb volume with ckd volume_type failed
+      ansible.builtin.assert:
         that:
           - result is failure
           - result is not changed
@@ -213,10 +271,42 @@
         capacity_type: cyl
       register: result
       ignore_errors: yes
-    - debug:
-        var: result.msg
-    - ansible.builtin.assert:
+    - name: Verify fb volume with ckd cap_type failed
+      ansible.builtin.assert:
         that:
           - result is failure
           - result is not changed
           - "'[BE7A0008] The value for attribute capType: cyl is not valid.' in result.msg"
+
+    - name: Create ckd alias volumes without ckd_base_ids
+      ibm.ds8000.ds8000_volume:
+        state: present
+        alias: yes
+        alias_order: increment
+        id: "FFFF"
+        quantity: 2
+      register: result
+      ignore_errors: yes
+    - name: Verify alias failed without ckd_base_ids
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("missing parameter(s) required by 'alias': ckd_base_ids")
+
+    - name: Create ckd alias volumes with multiple ids
+      ibm.ds8000.ds8000_volume:
+        state: present
+        alias: yes
+        alias_order: decrement
+        ckd_base_ids: ["FF00"]
+        id: ["FFFF", "FFFE"]
+        quantity: 2
+      register: result
+      ignore_errors: yes
+    - name: Verify alias failed with multiple ids
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("Only one id is allowed when creating alias volumes.")
