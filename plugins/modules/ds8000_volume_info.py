@@ -21,7 +21,8 @@ options:
   id:
     description:
         - The volume id.
-    type: str
+    type: list
+    elements: str
     aliases: [ volume_id ]
   host:
     description:
@@ -205,7 +206,8 @@ class VolumesInformer(Ds8000ManagerBase):
         volumes_by_lss = []
 
         if self.params['id']:
-            volume_by_id = self.verify_ds8000_object_exist(self.client.get_volume, volume_id=self.params['id'])
+            for vol_id in self.params['id']:
+                volume_by_id.append(self.verify_ds8000_object_exist(self.client.get_volume, volume_id=vol_id))
         if self.params['host']:
             if self.verify_ds8000_object_exist(self.client.get_host, host_name=self.params['host']):
                 volumes_by_host = self.get_ds8000_objects_from_command_output(self.client.get_volumes_by_host(host_name=self.params['host']))
@@ -246,7 +248,7 @@ class VolumesInformer(Ds8000ManagerBase):
 
 def main():
     argument_spec = ds8000_argument_spec()
-    argument_spec.update(id=dict(type='str', aliases=['volume_id']), host=dict(type='str'), pool=dict(type='str'), lss=dict(type='str'))
+    argument_spec.update(id=dict(type='list', elements='str', aliases=['volume_id']), host=dict(type='str'), pool=dict(type='str'), lss=dict(type='str'))
 
     module = AnsibleModule(
         argument_spec=argument_spec,

@@ -17,14 +17,26 @@
   block:
     - name: Query volume by id
       ibm.ds8000.ds8000_volume_info:
-        volume_id: "{{ volume_id }}"
+        volume_id: "{{ volume_id[0] }}"
       register: result
     - name: Verify the volume id is correct
       ansible.builtin.assert:
         that:
           - result is success
           - result is not changed
-          - result.volumes[0].id == "{{ volume_id }}"
+          - result.volumes[0].id == "{{ volume_id[0] }}"
+
+    - name: Query volume by ids
+      ibm.ds8000.ds8000_volume_info:
+        volume_id: "{{ volume_id }}"
+      register: result
+    - name: Verify the volume ids are correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result.volumes[0].id == "{{ volume_id[0] }}"
+          - result.volumes[1].id == "{{ volume_id[1] }}"
 
     - name: Query volumes by pool
       ibm.ds8000.ds8000_volume_info:
