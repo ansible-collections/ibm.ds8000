@@ -104,7 +104,7 @@ from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000Man
 LSS_TYPE = 'ckd'
 CKD_BASE_CU_TYPES = ['3990-3', '3990-tpf', '3990-6', 'bs2000']
 # The REST API returns links. pyds8k representation returns as links or with values containing empty strings.
-REPR_KEYS_TO_DELETE = ['link', 'sub_system_identifier']
+REPR_KEYS_TO_DELETE = ['link', 'volumes', 'sub_system_identifier']
 
 
 class LssManager(Ds8000ManagerBase):
