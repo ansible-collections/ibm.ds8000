@@ -78,24 +78,40 @@ EXAMPLES = r'''
     state: absent
 '''
 
-RETURN = r''' # '''
-# TODO this will return something
-
-LSS_TYPE = 'ckd'
-CKD_BASE_CU_TYPES = ['3990-3', '3990-tpf', '3990-6', 'bs2000']
-# The REST API returns links or even not the key. pyds8k representation returns as links or with values containing empty strings.
-REPR_KEYS_TO_DELETE = ['link', 'volumes']
+RETURN = r'''
+lss:
+    description: A list of dictionaries describing the lsses.
+    returned: I(state=present) changed
+    type: list
+    elements: dict
+    contains:
+      id:
+        description: The lss ID.
+        type: str
+        sample: "1F"
+    sample: |
+      [
+        {
+          "id": "1F"
+        }
+      ]
+'''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000ManagerBase, ds8000_argument_spec, ABSENT, PRESENT
 
+LSS_TYPE = 'ckd'
+CKD_BASE_CU_TYPES = ['3990-3', '3990-tpf', '3990-6', 'bs2000']
+# The REST API returns links. pyds8k representation returns as links or with values containing empty strings.
+REPR_KEYS_TO_DELETE = ['link', 'sub_system_identifier']
+
 
 class LssManager(Ds8000ManagerBase):
     def lss_present(self):
-        self.lss_facts = []
+        self.lss_info = []
         self.verify_lss()
-        return {'changed': self.changed, 'failed': self.failed, 'lss': self.lss_facts}
+        return {'changed': self.changed, 'failed': self.failed, 'lss': self.lss_info}
 
     def lss_absent(self):
         if self._does_lss_exist():
@@ -133,7 +149,7 @@ class LssManager(Ds8000ManagerBase):
             lss = []
             if not self.module.check_mode:
                 lss = self.client.create_lss_ckd(**kwargs)
-            self.lss_facts = self.delete_representation_keys(self.get_ds8000_objects_from_command_output(lss), key_list=REPR_KEYS_TO_DELETE)
+            self.lss_info = self.delete_representation_keys(self.get_ds8000_objects_from_command_output(lss), key_list=REPR_KEYS_TO_DELETE)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True

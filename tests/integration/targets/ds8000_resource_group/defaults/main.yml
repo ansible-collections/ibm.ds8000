@@ -1,0 +1,7 @@
+label: "ansible"
+new_label: "new_ansible"
+rg_name: "rg_ansible"
+cs_global: "00"
+pass_global: "00"
+gm_masters: ["01", "02"]
+gm_sessions: ["01", "02"]

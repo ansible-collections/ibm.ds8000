@@ -1,0 +1,61 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+# Test code for the ds8000_resource_group module
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_resource_group integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Get info by id
+      ibm.ds8000.ds8000_resource_group_info:
+        id: "{{ rg_id }}"
+      register: result
+    - name: Verify the resource group id is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result.resource_groups[0].id == '{{ rg_id }}'"
+
+    - name: Get info by label
+      ibm.ds8000.ds8000_resource_group_info:
+        label: "{{ label }}"
+      register: result
+    - name: Verify the resource group label is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result.resource_groups[0].label == '{{ label }}'"
+
+    - name: Get all
+      ibm.ds8000.ds8000_resource_group_info:
+      register: result
+    - name: Verify the resource group id is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - "result.resource_groups[0].id == '{{ rg_id }}'"
+
+    - name: Check Mode
+      ibm.ds8000.ds8000_resource_group_info:
+        id: "{{ rg_id }}"
+      check_mode: yes
+      register: result
+    - name: Verify the resource group id is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed

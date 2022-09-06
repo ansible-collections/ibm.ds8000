@@ -29,22 +29,30 @@
           - result is success
           - result is changed
           - "result.lss[0].id == '{{ lss_0 }}'"
-          - "result.lss[0].sub_system_identifier == '{{ ssid_0 }}'"
 
-    - name: Create a lss with type
+    - name: Create a lss with ckd_type
       ibm.ds8000.ds8000_lss:
         lss: "{{ lss_1 }}"
         ssid: "{{ ssid_1 }}"
         ckd_type: "{{ ckd_type }}"
         state: present
       register: result
-    - name: Verify the lss type is correct
+    - name: Verify the lss was created
       ansible.builtin.assert:
         that:
           - result is success
           - result is changed
           - "result.lss[0].id == '{{ lss_1 }}'"
-          # - "result.lss[0].ckd_base_cu_type == '{{ ckd_type }}'"
+    - name: Query the lss info by id
+      ibm.ds8000.ds8000_lss_info:
+        id: "{{ result.lss[0].id }}"
+      register: result_info
+    - name: Verify the lss ckd_type is correct
+      ansible.builtin.assert:
+        that:
+          - result_info is success
+          - result_info is not changed
+          - "result_info.lss[0].ckd_base_cu_type == '{{ ckd_type }}'"
 
     - name: Delete a lss
       ibm.ds8000.ds8000_lss:
