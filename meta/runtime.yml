@@ -10,6 +10,8 @@ action_groups:
     - ds8000_lss_info
     - ds8000_marray_info
     - ds8000_pool_info
+    - ds8000_resource_group
+    - ds8000_resource_group_info
     - ds8000_volume_info
     - ds8000_volume_mapping
     - ds8000_volume

@@ -1,0 +1,131 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+# Test code for the ds8000_resource_group module
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_resource_group integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Create a resource group
+      ibm.ds8000.ds8000_resource_group:
+        label: "{{ label }}"
+        state: present
+      register: result
+    - name: Verify the resource group was created
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+    - name: Get the resource group info
+      ibm.ds8000.ds8000_resource_group_info:
+        id: "{{ result.resource_groups[0].id }}"
+      register: result_info
+    - name: Verify the resource group label is correct
+      ansible.builtin.assert:
+        that:
+          - result_info is success
+          - result_info is not changed
+          - "result_info.resource_groups[0].label == '{{ label }}'"
+
+    - name: Modify the resource group with optionals
+      ibm.ds8000.ds8000_resource_group:
+        id: "{{result.resource_groups[0].id}}"
+        name: "{{ rg_name }}"
+        cs_global: "{{ cs_global }}"
+        pass_global: "{{ pass_global }}"
+        gm_masters: "{{ gm_masters }}"
+        gm_sessions: "{{ gm_sessions }}"
+        state: present
+      register: result
+    - name: Verify modify was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+    - name: Get the modified resource group info
+      ibm.ds8000.ds8000_resource_group_info:
+        id: "{{ result.resource_groups[0].id }}"
+      register: result_info
+    - name: Verify the resource group label is correct
+      ansible.builtin.assert:
+        that:
+          - result_info is success
+          - result_info is not changed
+          - "result_info.resource_groups[0].label == '{{ label }}'"
+          - "result_info.resource_groups[0].name == '{{ rg_name }}'"
+          - "result_info.resource_groups[0].cs_global == '{{ cs_global }}'"
+          - "result_info.resource_groups[0].pass_global == '{{ pass_global }}'"
+          - "result_info.resource_groups[0].gm_masters == {{ gm_masters }}"
+          - "result_info.resource_groups[0].gm_sessions == {{ gm_sessions }}"
+
+    - name: Delete a resource group
+      ibm.ds8000.ds8000_resource_group:
+        id: "{{ result.resource_groups[0].id }}"
+        state: absent
+      register: result
+    - name: Verify the resource group is deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create a resource group with optionals
+      ibm.ds8000.ds8000_resource_group:
+        label: "{{ label }}"
+        name: "{{ rg_name }}"
+        cs_global: "{{ cs_global }}"
+        pass_global: "{{ pass_global }}"
+        gm_masters: "{{ gm_masters }}"
+        gm_sessions: "{{ gm_sessions }}"
+        state: present
+      register: result
+    - name: Get the resource group with optionals info
+      ibm.ds8000.ds8000_resource_group_info:
+        id: "{{ result.resource_groups[0].id }}"
+      register: result_info
+    - name: Verify the resource group optionals are correct
+      ansible.builtin.assert:
+        that:
+          - result_info is success
+          - result_info is not changed
+          - "result_info.resource_groups[0].label == '{{ label }}'"
+          - "result_info.resource_groups[0].name == '{{ rg_name }}'"
+          - "result_info.resource_groups[0].cs_global == '{{ cs_global }}'"
+          - "result_info.resource_groups[0].pass_global == '{{ pass_global }}'"
+          - "result_info.resource_groups[0].gm_masters == {{ gm_masters }}"
+          - "result_info.resource_groups[0].gm_sessions == {{ gm_sessions }}"
+
+    - name: Delete the resource group by label
+      ibm.ds8000.ds8000_resource_group:
+        label: "{{ result_info.resource_groups[0].label }}"
+        state: absent
+      register: result
+    - name: Verify the resource group by label is deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create a resource group without label
+      ibm.ds8000.ds8000_resource_group:
+        name: "{{ rg_name }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the resource group was not created
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("label is required when creating a resource group")

@@ -92,6 +92,13 @@ class Ds8000ManagerBase(object):
             self.module.fail_json(msg="Unable to find volume name {volume_name} on the DS8000 storage system.".format(volume_name=volume_name))
         return volume_ids
 
+    def get_resource_group_from_label(self, label):
+        resource_groups = self.client.get_resource_groups()
+        for resource_group in resource_groups:
+            if resource_group.label == label:
+                return resource_group
+        return None
+
     def delete_representation_keys(self, representation, key_list=None):
         if key_list:
             for entry in representation:
