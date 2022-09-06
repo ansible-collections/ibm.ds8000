@@ -77,7 +77,10 @@ EXAMPLES = r'''
     password: "{{ ds8000_password }}"
     label: my_rg
     state: present
-    cs_global: '00'
+    cs_global: "00"
+    pass_global: "00"
+    gm_masters: ["01", "02"]
+    gm_sessions: ["01", "02"]
 
 - name: Ensure that a resource group does not exist in the storage
   ibm.ds8000.ds8000_resource_group:
