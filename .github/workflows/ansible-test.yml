@@ -20,6 +20,13 @@ on:
   schedule:
     - cron: '0 6 * * *'
 
+jobs:
+
+###
+# Sanity tests (REQUIRED)
+#
+# https://docs.ansible.com/ansible/latest/dev_guide/testing_sanity.html
+
   sanity:
     name: Sanity (Ⓐ${{ matrix.ansible }})
     strategy:
