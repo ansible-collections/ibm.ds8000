@@ -18,3 +18,36 @@ releases:
       name: ds8000_volume_mapping
       namespace: ''
     release_date: '2022-03-29'
+  1.1.0:
+    changes:
+      release_summary: Added new modules for managing lsses and resource groups.  Also
+        added new modules for getting info on hosts, host ports, lsses, marrays, pools,
+        and resource groups.
+    fragments:
+    - 1.1.0.yml
+    modules:
+    - description: Return info on DS8000 hosts
+      name: ds8000_host_info
+      namespace: ''
+    - description: Return info on DS8000 host ports
+      name: ds8000_host_port_info
+      namespace: ''
+    - description: Manage DS8000 lsses
+      name: ds8000_lss
+      namespace: ''
+    - description: Return info on DS8000 lsses
+      name: ds8000_lss_info
+      namespace: ''
+    - description: Return info on DS8000 managed arrays
+      name: ds8000_marray_info
+      namespace: ''
+    - description: Return info on DS8000 pools
+      name: ds8000_pool_info
+      namespace: ''
+    - description: Manage DS8000 resource groups
+      name: ds8000_resource_group
+      namespace: ''
+    - description: Return info on DS8000 resource groups
+      name: ds8000_resource_group_info
+      namespace: ''
+    release_date: '2022-09-29'
