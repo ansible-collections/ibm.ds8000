@@ -1,0 +1,197 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+# Test code for the ds8000_volume_mapping module
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_volume_mapping integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+  block:
+    - name: Create host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: present
+      register: result
+    - name: Verify the host
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create fb volume
+      ibm.ds8000.ds8000_volume:
+        name: "{{ vol_name }}"
+        state: present
+        pool: P0
+        capacity: "1"
+      register: result_v
+    - name: Verify the volume
+      ansible.builtin.assert:
+        that:
+          - result_v is success
+          - result_v is changed
+          - "result_v.volumes[0].name == '{{ vol_name }}'"
+
+    - name: Use check mode to verify the volume would be mapped to the host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ item.id }}"
+        state: present
+      with_items: "{{ result_v.volumes }}"
+      register: result
+      check_mode: yes
+    - name: Verify the volume would be mapped to the host
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Map volume to host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ item.id }}"
+        state: present
+      with_items: "{{ result_v.volumes }}"
+      register: result
+    - name: Verify the volume is mapped
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Map volume to host again with name
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_name: "{{ item.name }}"
+        state: present
+      with_items: "{{ result_v.volumes }}"
+      register: result
+    - name: Verify mapping success but not changed
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Map volume to host with non existent name
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_name: E4E545F3F380
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify mapping failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search('Unable to find volume name E4E545F3F380 on the DS8000 storage system.')
+
+    - name: Map volume to host already mapped to another host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ vol_id_mapped }}"
+        state: present
+      register: result
+    - name: Verify the volume is mapped
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Unmap volume mapped to other host from host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ vol_id_mapped }}"
+        state: absent
+      register: result
+    - name: Verify the volume is unassigned
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Use check mode to verify the volume would be unmapped from the host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_v.volumes }}"
+      register: result
+      check_mode: yes
+    - name: Verify the volume would be unmapped from the host
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Unmap volume from host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_v.volumes }}"
+      register: result
+    - name: Verify the volume is unassigned
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Unmap volume from host again
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host }}"
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_v.volumes }}"
+      register: result
+    - name: Verify unmapping success but not changed
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Unmap volume from wrong host
+      ibm.ds8000.ds8000_volume_mapping:
+        name: "{{ host_wrong }}"
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_v.volumes }}"
+      register: result
+    - name: Verify the volume is unmapped from the wrong host
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+  always:
+    - name: Delete fb volume
+      ibm.ds8000.ds8000_volume:
+        volume_id: "{{ item.id }}"
+        state: absent
+      with_items: "{{ result_v.volumes }}"
+      register: result
+    - name: Verify the volume is deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Delete host
+      ibm.ds8000.ds8000_host:
+        name: "{{ host }}"
+        state: absent
+      register: result
+    - name: Verify the host is deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed

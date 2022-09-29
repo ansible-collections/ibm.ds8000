@@ -1,9 +1,10 @@
 namespace: ibm
 name: ds8000
-version: 1.0.0
+version: 1.1.0
 readme: README.md
 authors:
   - matancarmeli7 (github.com/matancarmeli7)
+  - NjM3MjY5NzAgNzA3MzA3 (@NjM3MjY5NzAgNzA3MzA3)
 description: Ansible Collection for the IBM DS8000 family
 license_file: LICENSE
 tags:

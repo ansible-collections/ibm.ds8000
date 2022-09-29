@@ -1,0 +1,171 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+# Test code for the ds8000_lss module
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_lss integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Create a lss
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_0 }}"
+        ssid: "{{ ssid_0 }}"
+        state: present
+      register: result
+    - name: Verify the lss id is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+          - "result.lss[0].id == '{{ lss_0 }}'"
+
+    - name: Create a lss with ckd_type
+      ibm.ds8000.ds8000_lss:
+        lss: "{{ lss_1 }}"
+        ssid: "{{ ssid_1 }}"
+        ckd_type: "{{ ckd_type }}"
+        state: present
+      register: result
+    - name: Verify the lss was created
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+          - "result.lss[0].id == '{{ lss_1 }}'"
+    - name: Query the lss info by id
+      ibm.ds8000.ds8000_lss_info:
+        id: "{{ result.lss[0].id }}"
+      register: result_info
+    - name: Verify the lss ckd_type is correct
+      ansible.builtin.assert:
+        that:
+          - result_info is success
+          - result_info is not changed
+          - "result_info.lss[0].ckd_base_cu_type == '{{ ckd_type }}'"
+
+    - name: Delete a lss
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_1 }}"
+        state: absent
+      register: result
+    - name: Verify the lss is deleted
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is changed
+
+    - name: Create a lss which is already exists
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_exists }}"
+        ssid: "{{ ssid_exists }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the create result is success
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Delete a lss which does not exist
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_1 }}"
+        state: absent
+      register: result
+    - name: Verify the delete result is success
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Create a lss with an invalid type
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_1 }}"
+        ssid: "{{ ssid_1 }}"
+        ckd_type: "{{ ckd_type_invalid }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the invalid type results in failure
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result.msg is search("value of ckd_type must be one of: 3990-3, 3990-tpf, 3990-6, bs2000")
+
+    - name: Create a lss with an invalid ssid
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_1 }}"
+        ssid: "{{ ssid_invalid }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the invalid ssid results in failure
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - "'[BE7A0008] The value for attribute sub_system_identifier: {{ ssid_invalid }} is not valid.' in result.msg"
+
+    - name: Create a lss which is already exists with a different cu type
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_exists }}"
+        ssid: "{{ ssid_exists }}"
+        ckd_type: "{{ ckd_type }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the invalid ckd_type results in failure
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - "'ERR: lss exists but is not the requested ssid' in result.msg"
+
+    - name: Create a lss which already exists with a different ssid
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_0 }}"
+        ssid: "{{ ssid_new }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the different ssid results in failure
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - "'ERR: lss exists but is not the requested ssid {{ssid_new}}' in result.msg"
+
+    - name: Create a lss which already exists with a different type
+      ibm.ds8000.ds8000_lss:
+        id: "{{ lss_exists_fb }}"
+        ssid: "{{ ssid_exists }}"
+        state: present
+      register: result
+      ignore_errors: yes
+    - name: Verify the different type results in failure
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - "'ERR: lss exists but is not the type ckd' in result.msg"
+
+  always:
+    - name: Delete the lsses
+      ibm.ds8000.ds8000_lss:
+        id: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ lss_0 }}"
+        - "{{ lss_1 }}"
+      register: result
+    - name: Verify the lsses are deleted
+      ansible.builtin.assert:
+        that:
+          - result is success

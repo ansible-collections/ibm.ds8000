@@ -1,0 +1,8 @@
+---
+# module defaults
+ds8000_hostname: "{{ DS8000_HOSTNAME }}"
+ds8000_username: "{{ DS8000_USERNAME }}"
+ds80000_password: "{{ DS8000_PASSWORD }"
+ds8000_validate_certs: True
+
+no_object_msg: "returned no objects on the DS8000 storage system."

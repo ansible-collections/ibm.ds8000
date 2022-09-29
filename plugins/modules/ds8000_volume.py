@@ -24,17 +24,20 @@ options:
     type: str
   state:
     description:
-    - Specify the state the DS8000 volume should be in.
+      - Specify the state the DS8000 volume should be in.
     type: str
     default: present
     choices:
       - present
       - absent
-  volume_id:
+  id:
     description:
-      - The volume ID of the DS8000 volume to work with.
+      - The volume IDs of the DS8000 volume to work with.
       - Required when I(state=absent)
-    type: str
+      - Only one element is allowed when I(alias=yes)
+    type: list
+    elements: str
+    aliases: [ volume_id ]
   volume_type:
     description:
       - The volume type that will be created.
@@ -78,6 +81,28 @@ options:
       - tse
     type: str
     default: none
+  quantity:
+    description:
+      - The number of volumes that will be created.
+    type: int
+    default: 1
+  alias:
+    description:
+      - Boolean specifying if the id is an alias
+    type: bool
+  alias_order:
+    description:
+      -  The order in which alias volume IDs are assigned.
+    choices:
+      - decrement
+      - increment
+    type: str
+    default: decrement
+  ckd_base_ids:
+    description:
+      -  List of existing base CKD volume IDs to create aliases for.
+    type: list
+    elements: str
 notes:
   - Does not support C(check_mode).
   - Is not idempotent.
@@ -104,7 +129,7 @@ EXAMPLES = r'''
     hostname: "{{ ds8000_host }}"
     username: "{{ ds8000_username }}"
     password: "{{ ds8000_password }}"
-    name: volume_name_test
+    id: "FFFF"
     state: absent
 '''
 
@@ -113,58 +138,104 @@ volumes:
     description: A list of dictionaries describing the volumes.
     returned: I(state=present) changed
     type: list
+    elements: dict
     contains:
-      volume:
-        description: A dictionary describing the volume properties.
-        type: dict
-        contains:
-          id:
-            description: Volume ID.
-            type: str
-            sample: "1000"
-          name:
-            description: Volume name.
-            type: str
-            sample: "ansible"
+      id:
+        description: Volume ID.
+        type: str
+        sample: "1000"
+      name:
+        description: Volume name.
+        type: str
+        sample: "ansible"
+    sample: |
+      [
+        {
+          "id": "3001",
+          "name": "ansible"
+        }
+      ]
 '''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.ibm.ds8000.plugins.module_utils.ds8000 import Ds8000ManagerBase, ds8000_argument_spec, ABSENT, PRESENT
 
+REPR_KEYS_TO_DELETE = ['link', 'hosts', 'flashcopy', 'pprc']
+
 
 class VolumeManager(Ds8000ManagerBase):
     def volume_present(self):
-        self._create_volume()
+        if self.params['alias']:
+            if len(self.params['id']) != 1:
+                self.module.fail_json(msg="Only one id is allowed when creating alias volumes.")
+
+            self._create_alias_volume(self.params['id'][0])
+        else:
+            self._create_volume()
         return {'changed': self.changed, 'failed': self.failed, 'volumes': self.volume_facts}
 
-    def volume_absent(self, volume_id=''):
-        self._delete_ds8000_volume(volume_id)
+    def volume_absent(self):
+        # TODO DSANSIBLE-39.  For now, loop calls
+        for vol_id in self.params['id']:
+            self._delete_volume(vol_id)
         return {'changed': self.changed, 'failed': self.failed}
 
     def _create_volume(self):
-        volume_type = self.params['volume_type']
+        if self.params['id'] and self.params['quantity'] > 1:
+            self.module.fail_json(msg="parameters are mutually exclusive when creating volumes: id|quantity")
+
         try:
             kwargs = dict(
+                name_col=None,  # create_volumes required arg, needs to be set to None to not use
                 name=self.params['name'],
+                ids=self.params['id'] if self.params['id'] else None,
                 cap=self.params['capacity'],
                 pool=self.params['pool'],
+                stgtype=self.params['volume_type'],
                 tp=self.params['storage_allocation_method'],
                 captype=self.params['capacity_type'],
                 lss=self.params['lss'],
+                quantity=self.params['quantity'],
             )
             volumes = []
-            if volume_type == 'fb':
-                volumes = self.client.create_volume_fb(**kwargs)
-            elif volume_type == 'ckd':
-                volumes = self.client.create_volume_ckd(**kwargs)
-            self.volume_facts = self.get_ds8000_objects_from_command_output(volumes)
+            volumes = self.client.create_volumes(**kwargs)
+            self.check_multi_response_results(volumes, item_list=self.params['id'] if self.params['id'] else None, item_name='id')
+            self.volume_facts = self.delete_representation_keys(self.get_ds8000_objects_from_command_output(volumes), key_list=REPR_KEYS_TO_DELETE)
             self.changed = True
         except Exception as generic_exc:
             self.failed = True
             self.module.fail_json(msg="Failed to create volume on the DS8000 storage system. ERR: {error}".format(error=to_native(generic_exc)))
 
-    def _delete_ds8000_volume(self, volume_id):
+    def _create_alias_volume(self, volume_id):
+        try:
+            kwargs = dict(
+                id=volume_id,
+                ckd_base_ids=self.params['ckd_base_ids'],
+                quantity=self.params['quantity'],
+                alias_create_order=self.params['alias_order'],
+            )
+            volumes = []
+            volumes = self.client.create_alias_volumes(**kwargs)
+
+            # Handle multi response unknown id by building the list of ids that would be used
+            total_qty = len(self.params['ckd_base_ids']) * self.params['quantity']
+            alias_ids = []
+            if self.params['alias_order'] == 'increment':
+                for i in range(total_qty):
+                    alias_ids.append('%x' % (int(volume_id, 16) + i))
+            else:
+                for i in reversed(range(total_qty)):
+                    alias_ids.append('%x' % (int(volume_id, 16) - i))
+
+            self.check_multi_response_results(volumes, item_list=alias_ids, item_name='id')
+            self.volume_facts = self.delete_representation_keys(self.get_ds8000_objects_from_command_output(volumes), key_list=REPR_KEYS_TO_DELETE)
+            self.changed = True
+        except Exception as generic_exc:
+            self.failed = True
+            self.module.fail_json(msg="Failed to create volume on the DS8000 storage system. ERR: {error}".format(error=to_native(generic_exc)))
+
+    def _delete_volume(self, volume_id):
         try:
             self.client.delete_volume(volume_id)
             self.changed = True
@@ -181,20 +252,34 @@ def main():
     argument_spec.update(
         name=dict(type='str'),
         state=dict(type='str', default=PRESENT, choices=[ABSENT, PRESENT]),
-        volume_type=dict(type='str', default='fb', choices=['fb', 'ckd']),
+        volume_type=dict(type='str', default='fb', choices=['fb', 'ckd']),  # TODO change to stg_type?
         pool=dict(type='str'),
         capacity=dict(type='str'),
         capacity_type=dict(type='str', default='gib', choices=['gib', 'bytes', 'cyl', 'mod1']),
         lss=dict(type='str'),
         storage_allocation_method=dict(type='str', default='none', choices=['none', 'ese', 'tse']),
-        volume_id=dict(type='str'),
+        id=dict(type='list', elements='str', aliases=['volume_id']),
+        alias=dict(type='bool'),
+        alias_order=dict(type='str', default='decrement', choices=['decrement', 'increment']),
+        ckd_base_ids=dict(type='list', elements='str'),
+        quantity=dict(type='int', default=1),
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
         required_if=[
-            ['state', PRESENT, ('name', 'capacity', 'pool')],
-            ['state', ABSENT, ('volume_id',)],
+            ['state', PRESENT, ('name', 'alias'), True],
+            ['state', ABSENT, ('id',)],
+        ],
+        required_by={'alias': ('ckd_base_ids', 'id'), 'name': ('capacity', 'pool')},
+        mutually_exclusive=[
+            ['alias', 'name'],
+            ['alias', 'volume_type'],
+            ['alias', 'pool'],
+            ['alias', 'capacity'],
+            ['alias', 'capacity_type'],
+            ['alias', 'lss'],
+            ['alias', 'storage_allocation_method'],
         ],
         supports_check_mode=False,
     )
@@ -204,7 +289,7 @@ def main():
     if module.params['state'] == PRESENT:
         result = volume_manager.volume_present()
     elif module.params['state'] == ABSENT:
-        result = volume_manager.volume_absent(volume_id=module.params['volume_id'])
+        result = volume_manager.volume_absent()
 
     if result['failed']:
         module.fail_json(**result)

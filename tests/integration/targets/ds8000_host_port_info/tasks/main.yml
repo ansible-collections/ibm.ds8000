@@ -1,0 +1,72 @@
+# Copyright (C) 2022 IBM CORPORATION
+# Apache License, Version 2.0 (see https://opensource.org/licenses/Apache-2.0)
+
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+---
+- name: "ds8000_host_port_info integration tests"
+  module_defaults:
+    group/ibm.ds8000.ds8000:
+      hostname: "{{ ds8000_hostname }}"
+      username: "{{ ds8000_username }}"
+      password: "{{ ds8000_password }}"
+      validate_certs: "{{ ds8000_validate_certs }}"
+
+  block:
+    - name: Query all host ports
+      ibm.ds8000.ds8000_host_port_info:
+      register: result
+    - name: Verify the command was successful
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+
+    - name: Query host port by wwpn
+      ibm.ds8000.ds8000_host_port_info:
+        host_port: ["{{ result.host_ports[0].wwpn }}"]
+      register: result_one
+    - name: Verify the port is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result_one.host_ports[0].wwpn == result.host_ports[0].wwpn
+
+    - name: Query host ports by host
+      ibm.ds8000.ds8000_host_port_info:
+        host: "{{ host }}"
+      register: result_one
+    - name: Verify the host is correct
+      ansible.builtin.assert:
+        that:
+          - result is success
+          - result is not changed
+          - result_one.host_ports[0].host == "{{ host }}"
+
+    # Error Path
+    - name: Query host port with non existent wwpn
+      ibm.ds8000.ds8000_host_port_info:
+        host_port: "{{ host_port_non_existent }}"
+      register: result
+      ignore_errors: yes
+    - name: Verify the non existent wwpn failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
+
+    - name: Query host ports with non existent host
+      ibm.ds8000.ds8000_host_port_info:
+        host: "{{ host_port_non_existent }}"
+      register: result_one
+      ignore_errors: yes
+    - name: Verify the non existent host failed
+      ansible.builtin.assert:
+        that:
+          - result is failure
+          - result is not changed
+          - result.msg is search("{{ no_object_msg }}")
