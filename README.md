@@ -14,7 +14,7 @@ This collection provides a series of Ansible modules and plugins for interacting
 
 <!-- List the versions of Ansible the collection has been tested with. Must match what is in galaxy.yml. -->
 
-Tested with the current Ansible 2.9, 2.10, 2.11, 2.12 releases and the current development version of Ansible. Ansible versions before 2.9.10 are not supported.
+Tested with the current Ansible 2.9, 2.10, 2.11, 2.12, 2.13, 2.14 releases and the current development version of Ansible. Ansible versions before 2.9.10 are not supported.
 
 ## Python Requirements
 
@@ -24,10 +24,10 @@ This collection supports Python versions >=3.6 as required by pyds8k.
 
 <!-- List any external resources the collection depends on, for example minimum versions of an OS, libraries, or utilities. Do not list other Ansible collections here. -->
 
-| Name               | Minimum Version                        |
-| ------------------ | -------------------------------------- |
-| pyds8k             | v1.4.0                                 |
-| IBM DS8000® family | 8.x and higher with same API interface |
+| Name               | Minimum Version                                               |
+| ------------------ | ------------------------------------------------------------- |
+| pyds8k             | v1.5.0                                                        |
+| IBM DS8000® family | 8.x and higher with same API interface unless otherwise noted |
 
 ## Included content
 
@@ -35,19 +35,21 @@ This collection supports Python versions >=3.6 as required by pyds8k.
 
 ### Modules
 
-| Name                  | Description                           |
-| --------------------- | ------------------------------------- |
-| ds8000_host_port      | Manage host ports for a DS8000 host   |
-| ds8000_host_port_info | Return info on DS8000 host ports      |
-| ds8000_host           | Manage DS8000 hosts                   |
-| ds8000_host_info      | Return info on DS8000 hosts           |
-| ds8000_lss_info       | Return info on DS8000 lsses           |
-| ds8000_marray_info    | Return info on DS8000 managed arrays  |
-| ds8000_pool_info      | Return info on DS8000 pools           |
-| ds8000_volume_info    | Return basic info on DS8000 volumes   |
-| ds8000_volume_mapping | Manage DS8000 volume mapping to hosts |
-| ds8000_volume         | Manage DS8000 volumes                 |
-| ds8000_lss            | Manage DS8000 lsses                   |
+| Name                       | Description                           | Minimum IBM DS8000® RESTful API Version |
+| -------------------------- | ------------------------------------- | --------------------------------------- |
+| ds8000_host_port           | Manage host ports for a DS8000 host   |                                         |
+| ds8000_host_port_info      | Return info on DS8000 host ports      |                                         |
+| ds8000_host                | Manage DS8000 hosts                   |                                         |
+| ds8000_host_info           | Return info on DS8000 hosts           |                                         |
+| ds8000_lss                 | Manage DS8000 lsses                   | 5.9.31.8000                             |
+| ds8000_lss_info            | Return info on DS8000 lsses           |                                         |
+| ds8000_marray_info         | Return info on DS8000 managed arrays  |                                         |
+| ds8000_pool_info           | Return info on DS8000 pools           |                                         |
+| ds8000_resource_group      | Manage DS8000 resource groups         | 5.9.31.8000                             |
+| ds8000_resource_group_info | Return info on DS8000 resource groups | 5.9.31.8000                             |
+| ds8000_volume_info         | Return basic info on DS8000 volumes   |                                         |
+| ds8000_volume_mapping      | Manage DS8000 volume mapping to hosts |                                         |
+| ds8000_volume              | Manage DS8000 volumes                 |                                         |
 
 ## Idempotency
 
@@ -79,10 +81,10 @@ Note that if you install the collection from Ansible Galaxy, it will not be upgr
 ansible-galaxy collection install ibm.ds8000 --upgrade
 ```
 
-You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax to install version `0.1.0`:
+You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax to install version `1.0.0`:
 
 ```bash
-ansible-galaxy collection install ibm.ds8000:==0.1.0
+ansible-galaxy collection install ibm.ds8000:==1.0.0
 ```
 
 ### Configuring Trusted Communication
