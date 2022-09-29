@@ -39,6 +39,6 @@ options:
     type: int
     default: 8452
 requirements:
-  - pyds8k >= 1.4.0
+  - pyds8k >= 1.5.0
   - python >= 3.6
 '''
