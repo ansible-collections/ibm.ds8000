@@ -1,0 +1,4 @@
+[tool.black]
+line-length = 160
+skip-gitignore = true
+skip-string-normalization = true
