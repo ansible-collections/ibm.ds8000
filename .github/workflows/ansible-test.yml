@@ -18,14 +18,13 @@ on:
   # testing against latest version of ansible-test for each ansible-core
   # version
   schedule:
-    - cron: '0 6 * * *'
+    - cron: "0 6 * * *"
 
 jobs:
-
-###
-# Sanity tests (REQUIRED)
-#
-# https://docs.ansible.com/ansible/latest/dev_guide/testing_sanity.html
+  ###
+  # Sanity tests (REQUIRED)
+  #x
+  # https://docs.ansible.com/ansible/latest/dev_guide/testing_sanity.html
 
   sanity:
     name: Sanity (Ⓐ${{ matrix.ansible }})
@@ -46,6 +45,7 @@ jobs:
           - stable-2.12
           - stable-2.13
           - stable-2.14
+          - stable-2.15
           - devel
         # - milestone
     # Ansible-test on various stable branches does not yet work well with cgroups v2.
