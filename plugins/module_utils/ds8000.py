@@ -11,7 +11,6 @@ import abc
 import json
 import traceback
 
-from ansible.module_utils import six
 from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils.common.text.converters import to_native
 
@@ -34,8 +33,7 @@ PRESENT = 'present'
 ABSENT = 'absent'
 
 
-@six.add_metaclass(abc.ABCMeta)
-class Ds8000ManagerBase(object):
+class Ds8000ManagerBase(object, metaclass=abc.ABCMeta):
     def __init__(self, module):
 
         if not HAS_PYDS8K:
